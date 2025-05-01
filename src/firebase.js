@@ -3,7 +3,7 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "",
+  apiKey: process.env.REACT_APP_API_KEY,
   authDomain: "vvpvf-9f894.firebaseapp.com",
   databaseURL: "https://vvpvf-9f894-default-rtdb.firebaseio.com",
   projectId: "vvpvf-9f894",
