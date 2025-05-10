@@ -1,19 +1,31 @@
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import "../components/AppStyles.css";
+import { useNavigate } from "react-router-dom";
+import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+} from "firebase/auth";
+import { useAuth } from "../contexts/AuthContext"; // Import useAuth
 
 const AddMember = () => {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    address: "",
-    investmentPlan: "",
-    referralId: "",
-  });
-
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [investmentPlan, setInvestmentPlan] = useState("");
+  const [referralId, setReferralId] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false); // To disable button during submission
+  const navigate = useNavigate();
+  const db = getFirestore(); // Get Firestore instance
+  const { user: adminUser } = useAuth(); // Get the current admin user
+  //const adminAuth = getAuth(); // Store the admin's auth instance
+  const auth = getAuth();
   const [errors, setErrors] = useState({});
-
+  const [currentUser, setCurrentUser] = useState(null); // Add state for current user
+  
   const validateEmail = (email) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(email);
@@ -23,45 +35,76 @@ const AddMember = () => {
     const re = /^\d{10}$/;
     return re.test(phone);
   };
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    
-    // Phone number validation
-    if (name === 'phone') {
-      if (value === '' || (/^\d+$/.test(value) && value.length <= 10)) {
-        setFormData(prev => ({ ...prev, [name]: value }));
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        // Fetch the user's data from Firestore to get the role
+        const userDocRef = doc(db, "users", user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        if (userDocSnap.exists()) {
+          setCurrentUser({ ...userDocSnap.data(), uid: user.uid });
+        } else {
+          setCurrentUser({ uid: user.uid, role: "unknown" }); //handle
+        }
+      } else {
+        setCurrentUser(null);
       }
-      return;
-    }
-
-    setFormData(prev => ({ ...prev, [name]: value }));
-
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
-    }
-  };
-
-  const handleSubmit = (e) => {
+    });
+    return () => unsubscribe(); // Cleanup the listener
+  }, [auth, db]);
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrors("");
+    setIsSubmitting(true); // Disable the button
     const newErrors = {};
 
     // Validation checks
-    if (!validateEmail(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
+    if (!validateEmail(email)) {
+      newErrors.email = "Please enter a valid email address";
     }
 
-    if (!validatePhone(formData.phone)) {
-      newErrors.phone = 'Please enter a valid 10-digit phone number';
+    if (!validatePhone(phone)) {
+      newErrors.phone = "Please enter a valid 10-digit phone number";
     }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
+    try {
+      const secondaryAuth = getAuth();
+      const userCredential = await createUserWithEmailAndPassword(
+        secondaryAuth,
+        email,
+        "Complex&890"
+      ); // Use a default password
+      const { user } = userCredential;
+      const uid = user.uid;
 
-    console.log("Form Data:", formData);
+      // 2. Store additional user data in Firestore
+      const userRef = doc(db, "users", uid); // Use user.uid as document ID
+      await setDoc(userRef, {
+        uid, // Store the UID
+        name,
+        email,
+        phone,
+        address,
+        investmentPlan,
+        referralId: referralId || null, // Store referralId or null if empty
+        role: "user", // Set default role
+        createdBy: adminUser.uid,
+        createdAt: new Date().toISOString(),
+      });
+
+      console.log("User added successfully with UID:", uid);
+      // Optionally, show a success message to the user
+      navigate("/admin"); // Redirect to admin home or a success page
+    } catch (err) {
+      setErrors(err.message);
+      console.error("Error adding member:", err);
+    } finally {
+      setIsSubmitting(false); // Re-enable the button
+    }
   };
 
   return (
@@ -81,8 +124,8 @@ const AddMember = () => {
               type="text"
               id="name"
               name="name"
-              value={formData.name}
-              onChange={handleChange}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               required
             />
           </div>
@@ -93,11 +136,13 @@ const AddMember = () => {
               type="email"
               id="email"
               name="email"
-              value={formData.email}
-              onChange={handleChange}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
             />
-            {errors.email && <span className="error-message">{errors.email}</span>}
+            {errors.email && (
+              <span className="error-message">{errors.email}</span>
+            )}
           </div>
 
           <div className="form-group">
@@ -106,13 +151,15 @@ const AddMember = () => {
               type="tel"
               id="phone"
               name="phone"
-              value={formData.phone}
-              onChange={handleChange}
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
               maxLength="10"
               placeholder="10 digit number"
               required
             />
-            {errors.phone && <span className="error-message">{errors.phone}</span>}
+            {errors.phone && (
+              <span className="error-message">{errors.phone}</span>
+            )}
           </div>
 
           <div className="form-group">
@@ -120,8 +167,8 @@ const AddMember = () => {
             <select
               id="investmentPlan"
               name="investmentPlan"
-              value={formData.investmentPlan}
-              onChange={handleChange}
+              value={investmentPlan}
+              onChange={(e) => setInvestmentPlan(e.target.value)}
               required
             >
               <option value="">Select a plan</option>
@@ -135,8 +182,8 @@ const AddMember = () => {
             <textarea
               id="address"
               name="address"
-              value={formData.address}
-              onChange={handleChange}
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
               required
             />
           </div>
@@ -147,16 +194,16 @@ const AddMember = () => {
               type="text"
               id="referralId"
               name="referralId"
-              value={formData.referralId}
-              onChange={handleChange}
+              value={referralId}
+              onChange={(e) => setReferralId(e.target.value)}
               required
             />
           </div>
         </div>
 
         <div className="form-actions">
-          <button type="submit" className="btn btn-primary">
-            Submit
+          <button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Adding..." : "Add Member"}
           </button>
         </div>
       </form>

@@ -12,6 +12,7 @@ import BookAsset from "./components/BookAsset";
 import ProtectedRoute from "./components/ProtectedRoute"; // Import ProtectedRoute
 import Login from "./components/Login";
 import { AuthProvider } from "./contexts/AuthContext"; //Import AuthProvider
+import AdminUserManagement from "./components/AdminUserManagement";
 import "../src/components/AppStyles.css"; // Import the centralized CSS file
 
 function App() {
@@ -48,6 +49,14 @@ function App() {
               element={
                 <ProtectedRoute isAdminRoute={true}>
                   <AddMember />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/newmember"
+              element={
+                <ProtectedRoute isAdminRoute={true}>
+                  <AdminUserManagement />
                 </ProtectedRoute>
               }
             />

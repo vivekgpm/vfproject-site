@@ -15,8 +15,9 @@ const Plans = () => {
             <ul className="plan-features">
               <li>Minimum investment: ₹5,00,000</li>
               <li>Lock-in Period: 5 years</li>
-              <li>Bonus Time: Starts from 31st month onwards </li>
+              <li>Bonus Time: Starts from 37th month onwards </li>
               <li>Features: Discounts (5-40%), Referral and Sales Incentive</li>
+              <li>Retunrs: Up to 4x</li>
             </ul>
             <button className="btn btn-primary">Select Plan</button>
           </div>
@@ -31,8 +32,9 @@ const Plans = () => {
             <ul className="plan-features">
               <li>Minimum investment: ₹20,00,000</li>
               <li>Lock-in Period: 5 years</li>
-              <li>Bonus Time: Starts from 31st month onwards </li>
+              <li>Bonus Time: Starts from  37th month onwards </li>
               <li>Features: Discounts (5-40%), Referral and Sales Incentive</li>
+              <li>Retunrs: Up to 4x</li>
             </ul>
             <button className="btn btn-primary">Select Plan</button>
           </div>

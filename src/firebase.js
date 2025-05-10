@@ -1,18 +1,20 @@
-// Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_API_KEY,
   authDomain: "vvpvf-9f894.firebaseapp.com",
-  databaseURL: "https://vvpvf-9f894-default-rtdb.firebaseio.com",
   projectId: "vvpvf-9f894",
-  storageBucket: "vvpvf-9f894.firebasestorage.app",
+  storageBucket: "vvpvf-9f894.appspot.com",
   messagingSenderId: "151062346327",
   appId: "1:151062346327:web:7a90b6ab068259cc2f0112",
   measurementId: "G-ZE5LWZ01P8"
 };
-const fbapp = initializeApp(firebaseConfig);
+
 // Initialize Firebase
-export const auth = getAuth(fbapp);
-export default fbapp;
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+export { auth, db };

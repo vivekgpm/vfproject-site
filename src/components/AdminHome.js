@@ -55,7 +55,7 @@ const AdminHome = () => {
       {/* Add Member Button */}
       <div className="admin-header">
         <h2>Admin Dashboard</h2>
-        <Link to="/admin/add-member" className="btn btn-primary">
+        <Link to="/admin/newmember" className="btn btn-primary">
           + Add Member
         </Link>
       </div>
