@@ -2,8 +2,6 @@
 import { Link } from "react-router-dom";
 import {
   FaSearch,
-  FaChevronDown,
-  FaChevronUp,
   FaArrowLeft,
 } from "react-icons/fa";
 import { useState, useEffect, useCallback } from "react";
@@ -14,29 +12,17 @@ import {
   getDoc,
   getDocs,
   collection,
-  setDoc,
-  serverTimestamp,
 } from "firebase/firestore";
-import axios from "axios"; // For making API calls to your backend
+
 import "../components/AppStyles.css"; // Import your CSS styles
+
 function AdminUserManagement() {
   const [currentUser, setCurrentUser] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [users, setUsers] = useState([]);
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-    displayName: "",
-    phone: "",
-    address: "",
-    investmentPlan: "",
-    referralId: "",
-    role: "user",
-  });
   const [errorMessage, setErrorMessage] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
-  const [isPanelOpen, setIsPanelOpen] = useState(false);
+
   const [searchTerm, setSearchTerm] = useState("");
   const [sortField, setSortField] = useState("displayName");
   const [sortDirection, setSortDirection] = useState("asc");
@@ -93,71 +79,9 @@ function AdminUserManagement() {
     return () => unsubscribe();
   }, [auth, db, fetchUsers]);
   // Handle input changes
-  const handleInputChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
 
   // Handle form submission to create a new user
-  const handleCreateUser = async (e) => {
-    e.preventDefault();
-    setErrorMessage("");
-    setSuccessMessage("");
 
-    if (!isAdmin) {
-      setErrorMessage("You must be an admin to create users");
-      return;
-    }
-
-    try {
-      // Get current user's ID token for authorization
-      const idToken = await auth.currentUser.getIdToken();
-
-      // FIXED: Use the full backend URL
-      const BACKEND_URL = "http://localhost:3001"; // Change this to your backend URL
-      const response = await axios.post(`${BACKEND_URL}/api/users`, formData, {
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-        },
-      });
-      const { uid } = response.data;
-      await setDoc(doc(db, "users", uid), {
-        displayName: formData.displayName,
-        email: formData.email,
-        phone: formData.phone,
-        address: formData.address,
-        investmentPlan: formData.investmentPlan,
-        referralId: formData.referralId,
-        role: formData.role,
-        createdAt: serverTimestamp(),
-        createdBy: currentUser.uid,
-      });
-      // Reset form and show success message
-      setFormData({
-        email: "",
-        password: "",
-        displayName: "",
-        phone: "",
-        address: "",
-        investmentPlan: "",
-        referralId: "",
-        role: "user",
-      });
-
-      setSuccessMessage("User created successfully!");
-
-      // Refresh user list
-      fetchUsers();
-    } catch (error) {
-      console.error("Error creating user:", error);
-      setErrorMessage(
-        error.response?.data?.error ||
-          "Failed to create user. Please try again."
-      );
-    }
-  };
   if (isLoading) {
     return <div>Loading...</div>;
   }
@@ -249,20 +173,9 @@ function AdminUserManagement() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <button
-              className="toggle-panel-button"
-              onClick={() => setIsPanelOpen(!isPanelOpen)}
-            >
-              {isPanelOpen ? (
-                <>
-                  Hide Add User <FaChevronUp />
-                </>
-              ) : (
-                <>
-                  Show Add User <FaChevronDown />
-                </>
-              )}
-            </button>
+            <Link to="/admin/add-member" className="btn btn-primary">
+              + Add Member
+            </Link>
           </div>
 
           <div className="users-table">
@@ -320,129 +233,6 @@ function AdminUserManagement() {
             >
               Next
             </button>
-          </div>
-        </div>
-
-        <div className={`add-user-panel ${isPanelOpen ? "open" : ""}`}>
-          <div className="admin-panel">
-            <h1>Admin User Management</h1>
-
-            {/* Create User Form */}
-            <div className="create-user-form">
-              <h2>Create New User</h2>
-
-              {errorMessage && (
-                <div className="error-message">{errorMessage}</div>
-              )}
-              {successMessage && (
-                <div className="success-message">{successMessage}</div>
-              )}
-
-              <form onSubmit={handleCreateUser}>
-                <div className="form-group">
-                  <label htmlFor="email">Email:</label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="password">Password:</label>
-                  <input
-                    type="password"
-                    id="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    required
-                    minLength="6"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="displayName">Display Name:</label>
-                  <input
-                    type="text"
-                    id="displayName"
-                    name="displayName"
-                    value={formData.displayName}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="role">Role:</label>
-                  <select
-                    id="role"
-                    name="role"
-                    value={formData.role}
-                    onChange={handleInputChange}
-                  >
-                    <option value="user">User</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label htmlFor="phone">Phone:</label>
-                  <input
-                    type="tel"
-                    id="phone"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    required
-                    pattern="[0-9]{10}"
-                    title="Please enter a valid 10-digit phone number"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="address">Address:</label>
-                  <textarea
-                    id="address"
-                    name="address"
-                    value={formData.address}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="investmentPlan">Investment Plan:</label>
-                  <select
-                    id="investmentPlan"
-                    name="investmentPlan"
-                    value={formData.investmentPlan}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="">Select a plan</option>
-                    <option value="5">5 Lacs</option>
-                    <option value="20">20 Lacs</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="referralId">Referral ID:</label>
-                  <input
-                    type="text"
-                    id="referralId"
-                    name="referralId"
-                    value={formData.referralId}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <button type="submit">Create User</button>
-              </form>
-            </div>
-
-            {/* User List */}
           </div>
         </div>
       </div>

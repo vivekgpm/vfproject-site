@@ -13,7 +13,13 @@ import ProtectedRoute from "./components/ProtectedRoute"; // Import ProtectedRou
 import Login from "./components/Login";
 import { AuthProvider } from "./contexts/AuthContext"; //Import AuthProvider
 import AdminUserManagement from "./components/AdminUserManagement";
+import BookingDetails from "./components/BookingDetails";
+import DataMigration from "./components/DataMigration";
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
+
 import "../src/components/AppStyles.css"; // Import the centralized CSS file
+import "@fortawesome/fontawesome-free/css/all.min.css";
 
 function App() {
   return (
@@ -21,56 +27,75 @@ function App() {
       {" "}
       {/* Wrap your application with AuthProvider */}
       <Router>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/projects" element={<ProjectList />} />
-
-            <Route path="/login" element={<Login />} />
-            <Route path="/projects/:id" element={<ProjectDetails />} />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute isAdminRoute={true}>
-                  <AdminHome />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/add-member"
-              element={
-                <ProtectedRoute isAdminRoute={true}>
-                  <AddMember />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/newmember"
-              element={
-                <ProtectedRoute isAdminRoute={true}>
-                  <AdminUserManagement />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="/plans" element={<Plans />} />
-            <Route
-              path="/book-asset/:projectId/:assetType"
-              element={
-                <ProtectedRoute>
-                  <BookAsset />
-                </ProtectedRoute>
-              }
-            />
-          </Routes>
-        </Layout>
+        <div className="app">
+          <Navbar />
+          <main className="main-content">
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/projects" element={<ProjectList />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/projects/:id" element={<ProjectDetails />} />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute isAdminRoute={true}>
+                    <AdminHome />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/add-member"
+                element={
+                  <ProtectedRoute isAdminRoute={true}>
+                    <AddMember />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/newmember"
+                element={
+                  <ProtectedRoute isAdminRoute={true}>
+                    <AdminUserManagement />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/migrate-data"
+                element={
+                  <ProtectedRoute isAdminRoute={true}>
+                    <DataMigration />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/booking-details/:transactionId"
+                element={
+                  <ProtectedRoute>
+                    <BookingDetails />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/plans" element={<Plans />} />
+              <Route
+                path="/book-asset/:projectId/:assetType"
+                element={
+                  <ProtectedRoute>
+                    <BookAsset />
+                  </ProtectedRoute>
+                }
+              />
+            </Routes>
+          </main>
+          <Footer />
+        </div>
       </Router>
     </AuthProvider>
   );
