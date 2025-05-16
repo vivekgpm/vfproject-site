@@ -28,7 +28,7 @@ const Footer = () => {
               <li><Link to="/projects">Residential Plots</Link></li>
               <li><Link to="/projects">Commercial Sites</Link></li>
               <li><Link to="/projects">Senior Citizen Villas</Link></li>
-              <li><Link to="/projects">Farm Land</Link></li>
+              
             </ul>
           </div>
 
@@ -38,10 +38,6 @@ const Footer = () => {
               <li>
                 <i className="fas fa-phone"></i>
                 <span>+91 6363186060</span>
-              </li>
-              <li>
-                <i className="fas fa-envelope"></i>
-                <span>info@example.com</span>
               </li>
               <li>
                 <i className="fas fa-map-marker-alt"></i>

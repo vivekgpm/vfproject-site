@@ -636,6 +636,7 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  padding-bottom:16px;
 }
 
 .pagination {
@@ -2320,7 +2321,7 @@ input[name="referralId"] {
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  height: 400px;
+  height: 200px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2547,7 +2548,7 @@ input[name="referralId"] {
 }
 
 .project-image {
-  height: 90%;
+  height: 65%;
   overflow: hidden;
 }
 
