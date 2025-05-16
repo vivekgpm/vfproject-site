@@ -5,6 +5,17 @@ import { collection, getDocs, addDoc, query, where } from "firebase/firestore";
 import { db } from "../firebase";
 
 const BookAsset = () => {
+  // Format number in Indian numbering system
+  const formatIndianPrice = (num) => {
+    if (!num) return '0';
+    const val = Math.round(num);
+    const result = val.toString().split('.');
+    const lastThree = result[0].substring(result[0].length - 3);
+    const otherNumbers = result[0].substring(0, result[0].length - 3);
+    const finalResult = otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + (otherNumbers ? ',' : '') + lastThree;
+    return finalResult;
+  };
+
   const location = useLocation();
   const { projectId, assetType } = useParams();
   const projectData = location.state;
@@ -18,8 +29,7 @@ const BookAsset = () => {
     name: "",
     email: "",
     phone: "",
-  });
-  const [formData, setFormData] = useState({
+  });  const [formData, setFormData] = useState({
     referralId: "",
     unitNumber: "",
     floorNumber: "",
@@ -27,6 +37,7 @@ const BookAsset = () => {
     direction: "",
     surveyNumber: "",
     shopNumber: "",
+    area: projectData?.area?.replace(/[^0-9.]/g, '') || "",
   });
 
   const [pricing, setPricing] = useState({
@@ -70,8 +81,17 @@ const BookAsset = () => {
     setFilteredUsers(filtered);
   }, [searchTerm, users]);
   useEffect(() => {
-    if (projectData?.totalPrice) {
-      const totalPrice = parseFloat(projectData.totalPrice);
+    if (projectData) {
+      const isPerSqFtPricing = ["Residential Plot", "Commercial Plot", "Villa"].includes(assetType);
+      const areaSqFt = parseFloat(projectData.area?.replace(/[^0-9.]/g, '') || 0);
+      let totalPrice;
+
+      if (isPerSqFtPricing && projectData.price) {
+        totalPrice = projectData.price * areaSqFt;
+      } else {
+        totalPrice = parseFloat(projectData.totalPrice || 0);
+      }
+
       const discountPercent = parseFloat(projectData.discount || 0);
       const discountAmount = (totalPrice * discountPercent) / 100;
       const finalPrice = totalPrice - discountAmount;
@@ -82,9 +102,10 @@ const BookAsset = () => {
         discount: discountAmount,
         finalPrice,
         bookingAmount,
+        pricePerSqFt: projectData.price|| null
       });
     }
-  }, [projectData]);
+  }, [projectData, assetType]);
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -94,8 +115,7 @@ const BookAsset = () => {
   };
 
   const renderAssetFields = () => {
-    switch (assetType) {
-      case "Residential Plot":
+    switch (assetType) {      case "Residential Plot":
       case "Commercial Plot":
       case "Villa":
         return (
@@ -108,6 +128,35 @@ const BookAsset = () => {
                 value={formData.plotNumber}
                 onChange={handleInputChange}
                 required
+              />
+            </div>
+            <div className="form-group">
+              <label>Area (sq.ft)</label>
+              <input
+                type="number"
+                name="area"
+                value={formData.area}
+                onChange={(e) => {
+                  handleInputChange(e);
+                  const newArea = parseFloat(e.target.value) || 0;
+                  const pricePerSqFt = projectData.pricePerSqFt || (projectData.price || 0);
+                  const totalPrice = newArea * pricePerSqFt;
+                  const discountPercent = parseFloat(projectData.discount || 0);
+                  const discountAmount = (totalPrice * discountPercent) / 100;
+                  const finalPrice = totalPrice - discountAmount;
+                  const bookingAmount = finalPrice * 0.2;
+                  
+                  setPricing({
+                    totalPrice,
+                    discount: discountAmount,
+                    finalPrice,
+                    bookingAmount,
+                    pricePerSqFt
+                  });
+                }}
+                required
+                min="0"
+                step="0.01"
               />
             </div>
             <div className="form-group">
@@ -203,6 +252,11 @@ const BookAsset = () => {
         },
         pricing: {
           ...pricing,
+          totalPrice: pricing.totalPrice,
+          discount: pricing.discount,
+          finalPrice: pricing.finalPrice,
+          bookingAmount: pricing.bookingAmount,
+          pricePerSqFt: pricing.pricePerSqFt,
           incentive: selectedUser?.earning || 0,
         },
         status: "pending",
@@ -379,29 +433,43 @@ const BookAsset = () => {
 
         <div className="pricing-details">
           <h3>Pricing Details</h3>
-          <div className="price-grid">
+          <div className="price-grid">            {["Residential Plot", "Commercial Plot", "Villa"].includes(assetType) && (
+              <>                <div className="price-item">
+                  <span className="label">Price per sq.ft</span>
+                  <span className="value">
+                    ₹{formatIndianPrice(projectData.price || 0)}/sq.ft
+                  </span>
+                </div>
+                <div className="price-item">
+                  <span className="label">Total Area</span>
+                  <span className="value">
+                    {formData.area || '0'} sq.ft
+                  </span>
+                </div>
+              </>
+            )}
             <div className="price-item">
               <span className="label">Total Price</span>
               <span className="value">
-                ₹{pricing.totalPrice.toLocaleString()}
+                ₹{formatIndianPrice(pricing.totalPrice)}
               </span>
             </div>
             <div className="price-item highlight">
               <span className="label">Discount ({projectData.discount}%)</span>
               <span className="value">
-                ₹{pricing.discount.toLocaleString()}
+                ₹{formatIndianPrice(pricing.discount)}
               </span>
             </div>
             <div className="price-item final">
               <span className="label">Final Price</span>
               <span className="value">
-                ₹{pricing.finalPrice.toLocaleString()}
+                ₹{formatIndianPrice(pricing.finalPrice)}
               </span>
             </div>
             <div className="price-item booking">
               <span className="label">Booking Amount (20%)</span>
               <span className="value">
-                ₹{pricing.bookingAmount.toLocaleString()}
+                ₹{formatIndianPrice(pricing.bookingAmount)}
               </span>
             </div>
           </div>

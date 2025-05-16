@@ -111,6 +111,12 @@ const BookingDetails = () => {
         <section className="info-section">
           <h3>Pricing Details</h3>
           <div className="info-grid">
+            {["Residential Plot", "Commercial Plot", "Villa"].includes(booking.assetType) && (
+              <div className="info-item">
+                <span className="label">Price per sq.ft</span>
+                <span className="value">₹{booking.pricing.pricePerSqFt?.toLocaleString() || '0'}/sq.ft</span>
+              </div>
+            )}
             <div className="info-item">
               <span className="label">Total Price</span>
               <span className="value">₹{booking.pricing.totalPrice.toLocaleString()}</span>

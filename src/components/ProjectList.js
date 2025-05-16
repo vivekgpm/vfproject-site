@@ -95,7 +95,10 @@ const ProjectList = () => {
                 />
               </div>
               <div className="project-name">
-                <h3>{project.name}</h3>
+                <h3>{project.name}</h3>                
+              </div>
+              <div className="project-name">
+              <h4>{project.location}</h4>
               </div>
             </Link>
           ))}

@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../firebase';
-import { useAuth } from '../contexts/AuthContext';
-import '../components/AppStyles.css';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+
+import { auth } from "../firebase";
+import { useAuth } from "../contexts/AuthContext";
+import "../components/AppStyles.css";
 
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -16,12 +16,18 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      setError('');
+      setError("");
       setLoading(true);
-      await login(email, password);
-      navigate('/admin');
+      const loggedInUser = await login(email, password);
+
+      // Check user role and navigate accordingly
+      if (loggedInUser?.role === "user") {
+        navigate("/profile");
+      } else {
+        navigate("/admin");
+      }
     } catch (err) {
-      setError('Failed to sign in. Please check your credentials.');
+      setError("Failed to sign in. Please check your credentials.");
     } finally {
       setLoading(false);
     }
@@ -61,12 +67,8 @@ const Login = () => {
               />
             </div>
 
-            <button
-              type="submit"
-              className="login-button"
-              disabled={loading}
-            >
-              {loading ? 'Signing in...' : 'Sign In'}
+            <button type="submit" className="login-button" disabled={loading}>
+              {loading ? "Signing in..." : "Sign In"}
             </button>
           </form>
         </div>

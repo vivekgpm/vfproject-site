@@ -1,17 +1,22 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "../components/AppStyles.css";
 import {
   getFirestore,
   doc,
-  setDoc,
-  serverTimestamp,
+  
   getDoc,
+  collection,
+  addDoc,
+  getDocs,
+  query,
+  orderBy,
+  limit,
 } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 
 import "../components/AppStyles.css"; // Import your CSS styles
-import axios from "axios"; // For making API calls to your backend
+
 
 const AddMember = () => {
   const [formData, setFormData] = useState({
@@ -32,6 +37,7 @@ const AddMember = () => {
   const auth = getAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null); // Add state for current user
+  const [bdaId, setBdaId] = useState("");
 
   const handleInputChange = (e) => {
     setFormData({
@@ -39,61 +45,7 @@ const AddMember = () => {
       [e.target.name]: e.target.value,
     });
   };
-  const handleCreateUser = async (e) => {
-    e.preventDefault();
-    setErrorMessage("");
-    setSuccessMessage("");
 
-    if (!isAdmin) {
-      setErrorMessage("You must be an admin to create users");
-      return;
-    }
-
-    try {
-      // Get current user's ID token for authorization
-      const idToken = await auth.currentUser.getIdToken();
-
-      // FIXED: Use the full backend URL
-      const BACKEND_URL = "http://localhost:3001"; // Change this to your backend URL
-      const response = await axios.post(`${BACKEND_URL}/api/users`, formData, {
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-        },
-      });
-      const { uid } = response.data;
-      await setDoc(doc(db, "users", uid), {
-        displayName: formData.displayName,
-        email: formData.email,
-        phone: formData.phone,
-        address: formData.address,
-        investmentPlan: formData.investmentPlan,
-        referralId: formData.referralId,
-        role: formData.role,
-        createdAt: serverTimestamp(),
-        createdBy: currentUser.uid,
-      });
-      // Reset form and show success message
-      setFormData({
-        email: "",
-        password: "",
-        displayName: "",
-        phone: "",
-        address: "",
-        investmentPlan: "",
-        referralId: "",
-        role: "user",
-      });
-
-      setSuccessMessage("User created successfully!");
-      navigate("/admin/newmember");
-    } catch (error) {
-      console.error("Error creating user:", error);
-      setErrorMessage(
-        error.response?.data?.error ||
-          "Failed to create user. Please try again."
-      );
-    }
-  };
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -120,7 +72,62 @@ const AddMember = () => {
     return () => unsubscribe();
   }, [auth, db]);
 
-  // ...existing imports...
+  useEffect(() => {
+    generateBdaId();
+  }, []);
+
+  const generateBdaId = async () => {
+    try {
+      // Get the last BDA ID from the database
+      const usersRef = collection(db, "users");
+      const q = query(usersRef, orderBy("bdaId", "desc"), limit(1));
+      const querySnapshot = await getDocs(q);
+      
+      let newNumber = 1;
+      if (!querySnapshot.empty) {
+        const lastBdaId = querySnapshot.docs[0].data().bdaId;
+        const lastNumber = parseInt(lastBdaId.replace("BDA", ""));
+        newNumber = lastNumber + 1;
+      }
+      
+      // Format the new BDA ID
+      const newBdaId = `BDA${newNumber.toString().padStart(4, "0")}`;
+      setBdaId(newBdaId);
+    } catch (error) {
+      console.error("Error generating BDA ID:", error);
+      setErrorMessage("Error generating BDA ID");
+    }
+  };
+
+  const handleCreateUser = async (e) => {
+    e.preventDefault();
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    if (!isAdmin) {
+      setErrorMessage("You must be an admin to create users");
+      return;
+    }
+
+    try {
+      // Convert plan name to amount
+      const planAmount = formData.investmentPlan === "Economy Plan" ? "5" : "20";
+
+      const userData = {
+        ...formData,
+        bdaId,
+        investmentPlan: planAmount + " Lacs",
+        createdAt: new Date(),
+      };
+
+      await addDoc(collection(db, "users"), userData);
+      navigate("/admin/newmember");
+    } catch (error) {
+      console.error("Error adding member:", error);
+      setErrorMessage("Error adding member. Please try again.");
+    }
+  };
+
   if (isLoading) {
     return <div>Loading...</div>;
   }
@@ -145,23 +152,23 @@ const AddMember = () => {
             {/* Column 1 */}
             <div className="form-column">
               <div className="form-group">
+                <label htmlFor="displayName">Name:</label>
+                <input
+                  type="text"
+                  id="displayName"
+                  name="displayName"
+                  value={formData.displayName}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div className="form-group">
                 <label htmlFor="email">Email:</label>
                 <input
                   type="email"
                   id="email"
                   name="email"
                   value={formData.email}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="displayName">Display Name:</label>
-                <input
-                  type="text"
-                  id="displayName"
-                  name="displayName"
-                  value={formData.displayName}
                   onChange={handleInputChange}
                   required
                 />
@@ -208,8 +215,8 @@ const AddMember = () => {
                   required
                 >
                   <option value="">Select a plan</option>
-                  <option value="5">5 Lacs</option>
-                  <option value="20">20 Lacs</option>
+                  <option value="Economy Plan">Economy Plan</option>
+                  <option value="Premium Plan">Premium Plan</option>
                 </select>
               </div>
 
@@ -239,7 +246,7 @@ const AddMember = () => {
             </div>
           </div>
           <div className="form-actions">
-            <button type="submit">Create User</button>
+            <button type="submit">Add Member</button>
           </div>
         </form>
       </div>

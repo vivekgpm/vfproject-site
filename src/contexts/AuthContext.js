@@ -80,11 +80,13 @@ const AuthProvider = ({ children }) => {
       const userData = await fetchUserData(userCredential.user.uid);
       
       if (userData) {
-        setUser({
+        const user = {
           uid: userCredential.user.uid,
           email: userCredential.user.email,
           ...userData
-        });
+        };
+        setUser(user);
+        return user;
       } else {
         throw new Error('User profile not found. Please contact support.');
       }

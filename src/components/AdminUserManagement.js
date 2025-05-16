@@ -12,6 +12,8 @@ import {
   getDoc,
   getDocs,
   collection,
+  query,
+  where
 } from "firebase/firestore";
 
 import "../components/AppStyles.css"; // Import your CSS styles
@@ -36,20 +38,22 @@ function AdminUserManagement() {
   // Fetch all users (admin only)
   const fetchUsers = useCallback(async () => {
     try {
-      const usersSnapshot = await getDocs(collection(db, "users"));
-      const usersList = [];
-
-      usersSnapshot.forEach((doc) => {
-        usersList.push({
-          uid: doc.id,
-          ...doc.data(),
-        });
-      });
-
+      const usersRef = collection(db, "users");
+      const q = query(
+        usersRef,
+        where("role", "==", "user")       
+      );
+      const querySnapshot = await getDocs(q);
+      const usersList = querySnapshot.docs.map((doc) => ({
+        uid: doc.id,
+        ...doc.data(),
+      }));
       setUsers(usersList);
     } catch (error) {
       console.error("Error fetching users:", error);
       setErrorMessage("Failed to load users. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   }, [db]);
   useEffect(() => {
@@ -183,8 +187,8 @@ function AdminUserManagement() {
               <thead>
                 <tr>
                   {[
-                    ["displayName", "Display Name"],
-                    ["email", "Email"],
+                    ["displayName", "Name"],                   
+                    ["bdaId", "BDA ID"],
                     ["phone", "Phone"],
                     ["investmentPlan", "Investment Plan"],
                     ["referralId", "Referral ID"],
@@ -204,10 +208,10 @@ function AdminUserManagement() {
               <tbody>
                 {paginatedUsers.map((user) => (
                   <tr key={user.uid}>
-                    <td>{user.displayName}</td>
-                    <td>{user.email}</td>
+                    <td>{user.displayName}</td>                   
+                    <td>{user.bdaId}</td>
                     <td>{user.phone}</td>
-                    <td>{user.investmentPlan} Lacs</td>
+                    <td>{user.investmentPlan}</td>
                     <td>{user.referralId || "N/A"}</td>
                     <td>{user.role}</td>
                     <td>{formatDate(user.createdAt) || "N/A"}</td>

@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import HomePage from "./components/HomePage";
 import ProjectList from "./components/ProjectList";
 import ProjectDetails from "./components/ProjectDetails";
-import Layout from "./components/Layout";
 import Profile from "./components/Profile";
 import AdminHome from "./components/AdminHome";
 import AddMember from "./components/AddMember";
@@ -14,9 +13,9 @@ import Login from "./components/Login";
 import { AuthProvider } from "./contexts/AuthContext"; //Import AuthProvider
 import AdminUserManagement from "./components/AdminUserManagement";
 import BookingDetails from "./components/BookingDetails";
-import DataMigration from "./components/DataMigration";
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import EditTransaction from './components/EditTransaction';
 
 import "../src/components/AppStyles.css"; // Import the centralized CSS file
 import "@fortawesome/fontawesome-free/css/all.min.css";
@@ -67,14 +66,7 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              <Route
-                path="/admin/migrate-data"
-                element={
-                  <ProtectedRoute isAdminRoute={true}>
-                    <DataMigration />
-                  </ProtectedRoute>
-                }
-              />
+              
               <Route
                 path="/booking-details/:transactionId"
                 element={
@@ -89,6 +81,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <BookAsset />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/edit-transaction/:id"
+                element={
+                  <ProtectedRoute isAdminRoute={true}>
+                    <EditTransaction />
                   </ProtectedRoute>
                 }
               />

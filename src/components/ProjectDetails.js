@@ -182,6 +182,11 @@ const ProjectDetails = () => {
   };
 
   const handleBooking = () => {
+    const isPerSqFtPricing = ["Residential Plot", "Commercial Plot", "Villa"].includes(project.type);
+    const areaSqFt = parseFloat(project.area?.replace(/[^0-9.]/g, '') || 0);
+    const pricePerSqFt = isPerSqFtPricing ? project.pricePerSqFt || (project.price / areaSqFt) : 0;
+    const totalPrice = isPerSqFtPricing ? (pricePerSqFt * areaSqFt) : (project.price || 5000000);
+
     navigate(`/book-asset/${project.id}/${project.type}`, {
       state: {
         projectId: project.id,
@@ -189,17 +194,25 @@ const ProjectDetails = () => {
         type: project.type,
         area: project.area,
         location: project.location,
-        totalPrice: project.price || 5000000,
+        totalPrice: totalPrice,
+        pricePerSqFt: isPerSqFtPricing ? pricePerSqFt : null,
         discount: project.discount?.replace("%", "") || "0",
         image: getProjectImage(project.type),
         description: project.description,
-        price: project.price
+        price: totalPrice
       },
     });
   };
 
   return (
     <div className="project-details-page">
+      <Link 
+          to={`/projects/`} 
+          className="back-button"
+          
+        >
+          ← Back to Projects
+        </Link>
       <div
         className="project-hero"
         style={{
@@ -229,12 +242,20 @@ const ProjectDetails = () => {
               <div className="details-grid">
                 <div className="detail-item">
                   <span className="detail-label">Area</span>
-                  <span className="detail-value">{project.area} sq.ft</span>
+                  <span className="detail-value">{project.area}</span>
                 </div>
                 <div className="detail-item">
                   <span className="detail-label">Price</span>
                   <span className="detail-value">
-                    ₹{project.price ? project.price.toLocaleString() : "0"}
+                    {["Residential Plot", "Commercial Plot", "Villa"].includes(project.type) ? (
+                      <>
+                        ₹{project.price ? project.price.toLocaleString() : "0"}/sq.ft
+                        <br />
+                       
+                      </>
+                    ) : (
+                      <>₹{project.price ? project.price.toLocaleString() : "0"}</>
+                    )}
                   </span>
                 </div>
                 {renderInventoryFields()}
