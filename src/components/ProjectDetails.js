@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import "../components/AppStyles.css";
+import { useAuth } from "../contexts/AuthContext";
 
 // Import images
 import villa from "../assets/images/villa.jpg";
@@ -13,11 +14,10 @@ import cc from "../assets/images/img100.jpg";
 const ProjectDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
-  const [project, setProject] = useState(null);
-  //  const [transactions, setTransactions] = useState([]);
+  const location = useLocation();  const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { user } = useAuth();
 
   // Function to get image based on project type
   const getProjectImage = (type) => {
@@ -273,10 +273,7 @@ const ProjectDetails = () => {
                 </ul>
               </div>
             </div>
-          </div>
-
-          <div className="project-sidebar">
-            {project.discount && (
+          </div>          <div className="project-sidebar">            {project.discount && (
               <div className="discount-banner">
                 <h3>Special Offer</h3>
                 <p className="discount-badge">
@@ -284,11 +281,27 @@ const ProjectDetails = () => {
                 </p>
               </div>
             )}
-            <div className="booking-card">
-              <button className="book-now-btn" onClick={handleBooking}>
-                Book Now
-              </button>
-            </div>
+            {user?.role === 'admin' && (
+              <div className="booking-card">
+                <button className="book-now-btn" onClick={handleBooking}>
+                  Book Now
+                </button>
+              </div>
+            )}
+            {!user && (
+              <div className="booking-card">
+                <p>Please login to book this property.</p>
+                <Link to="/login" className="btn btn-primary">
+                  Login
+                </Link>
+              </div>
+            )}
+            {user && user.role !== 'admin' && (
+              <div className="booking-card">
+                <p>Only administrators can book properties.</p>
+                <p>Please contact an administrator for assistance.</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
