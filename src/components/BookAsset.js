@@ -1,35 +1,44 @@
-import "../components/AppStyles.css"; // Import your CSS styles
+import "../components/AppStyles.css";
 import { useState, useEffect } from "react";
 import { useLocation, useParams, Link, useNavigate } from "react-router-dom";
-import { collection, getDocs, addDoc, query, where } from "firebase/firestore";
-import { db } from "../firebase";
+import { createTransaction } from "../api/transactionApi";
+import { getUsersByRole } from "../api/userApi";
+import { getAllPlans } from "../api/planApi";
+import UserSearchSelect from "./UserSearchSelect";
 
 const BookAsset = () => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [users, setUsers] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState([]);
+  const [plans, setPlans] = useState([]);
+  const [selectedPlan, setSelectedPlan] = useState(null);
+
   // Format number in Indian numbering system
   const formatIndianPrice = (num) => {
-    if (!num) return '0';
+    if (!num) return "0";
     const val = Math.round(num);
-    const result = val.toString().split('.');
+    const result = val.toString().split(".");
     const lastThree = result[0].substring(result[0].length - 3);
     const otherNumbers = result[0].substring(0, result[0].length - 3);
-    const finalResult = otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + (otherNumbers ? ',' : '') + lastThree;
+    const finalResult =
+      otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ",") +
+      (otherNumbers ? "," : "") +
+      lastThree;
     return finalResult;
   };
 
   const location = useLocation();
   const { projectId, assetType } = useParams();
   const projectData = location.state;
-  const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filteredUsers, setFilteredUsers] = useState([]);
   const navigate = useNavigate();
   const [bookingType, setBookingType] = useState("member");
   const [nonMemberData, setNonMemberData] = useState({
     name: "",
     email: "",
     phone: "",
-  });  const [formData, setFormData] = useState({
+  });
+  const [formData, setFormData] = useState({
     referralId: "",
     unitNumber: "",
     floorNumber: "",
@@ -37,7 +46,7 @@ const BookAsset = () => {
     direction: "",
     surveyNumber: "",
     shopNumber: "",
-    area: projectData?.area?.replace(/[^0-9.]/g, '') || "",
+    area: projectData?.area?.replace(/[^0-9.]/g, "") || "",
   });
 
   const [pricing, setPricing] = useState({
@@ -56,13 +65,7 @@ const BookAsset = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const usersRef = collection(db, "users");
-        const q = query(usersRef, where("role", "==", "user"));
-        const snapshot = await getDocs(q);
-        const usersData = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+        const usersData = await getUsersByRole("user");
         setUsers(usersData);
       } catch (error) {
         console.error("Error fetching users:", error);
@@ -82,8 +85,14 @@ const BookAsset = () => {
   }, [searchTerm, users]);
   useEffect(() => {
     if (projectData) {
-      const isPerSqFtPricing = ["Residential Plot", "Commercial Plot", "Villa"].includes(assetType);
-      const areaSqFt = parseFloat(projectData.area?.replace(/[^0-9.]/g, '') || 0);
+      const isPerSqFtPricing = [
+        "Residential Plot",
+        "Commercial Plot",
+        "Villa",
+      ].includes(assetType);
+      const areaSqFt = parseFloat(
+        projectData.area?.replace(/[^0-9.]/g, "") || 0
+      );
       let totalPrice;
 
       if (isPerSqFtPricing && projectData.price) {
@@ -102,10 +111,24 @@ const BookAsset = () => {
         discount: discountAmount,
         finalPrice,
         bookingAmount,
-        pricePerSqFt: projectData.price|| null
+        pricePerSqFt: projectData.price || null,
+        discountPercent: discountPercent,
       });
     }
   }, [projectData, assetType]);
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const plansData = await getAllPlans();
+        setPlans(plansData);
+      } catch (error) {
+        console.error("Error fetching plans:", error);
+      }
+    };
+
+    fetchPlans();
+  }, []);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -115,7 +138,8 @@ const BookAsset = () => {
   };
 
   const renderAssetFields = () => {
-    switch (assetType) {      case "Residential Plot":
+    switch (assetType) {
+      case "Residential Plot":
       case "Commercial Plot":
       case "Villa":
         return (
@@ -139,19 +163,20 @@ const BookAsset = () => {
                 onChange={(e) => {
                   handleInputChange(e);
                   const newArea = parseFloat(e.target.value) || 0;
-                  const pricePerSqFt = projectData.pricePerSqFt || (projectData.price || 0);
+                  const pricePerSqFt =
+                    projectData.pricePerSqFt || projectData.price || 0;
                   const totalPrice = newArea * pricePerSqFt;
                   const discountPercent = parseFloat(projectData.discount || 0);
                   const discountAmount = (totalPrice * discountPercent) / 100;
                   const finalPrice = totalPrice - discountAmount;
                   const bookingAmount = finalPrice * 0.2;
-                  
+
                   setPricing({
                     totalPrice,
                     discount: discountAmount,
                     finalPrice,
                     bookingAmount,
-                    pricePerSqFt
+                    pricePerSqFt,
                   });
                 }}
                 required
@@ -229,7 +254,6 @@ const BookAsset = () => {
         return null;
     }
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (bookingType === "member" && !selectedUser) {
@@ -260,25 +284,18 @@ const BookAsset = () => {
           incentive: selectedUser?.earning || 0,
         },
         status: "pending",
-        createdAt: new Date(),
-        updatedAt: new Date(),
       };
 
       if (bookingType === "non-member") {
         transactionData.nonMemberDetails = nonMemberData;
       }
 
-      const docRef = await addDoc(
-        collection(db, "transactions"),
-        transactionData
-      );
-      navigate(`/booking-details/${docRef.id}`);
+      const transactionId = await createTransaction(transactionData);
+      navigate(`/booking-details/${transactionId}`);
     } catch (error) {
       console.error("Error creating transaction:", error);
     }
   };
-
-  
 
   if (!projectData) {
     return (
@@ -290,41 +307,24 @@ const BookAsset = () => {
       </div>
     );
   }
-  // Replace the existing UserSearch component
-  const UserSearch = () => (
-    <div className="user-search-section">
-      <h3>Select Customer</h3>
-      <div className="user-select">
-        <select
-          value={selectedUser?.id || ""}
-          onChange={(e) => {
-            const selected = users.find((user) => user.id === e.target.value);
-            setSelectedUser(selected);
-            if (selected) {
-              setFormData((prev) => ({
-                ...prev,
-                referralId: selected.displayName || "",
-              }));
-            }
-          }}
-          required
-        >
-          <option value="">Select a customer</option>
-          {users.map((user) => (
-            <option key={user.id} value={user.id}>
-              {user.displayName} ({user.email})
-            </option>
-          ))}
-        </select>
-      </div>
-      {selectedUser && (
-        <div className="selected-user-info">
-          <p>Selected: {selectedUser.displayName}</p>
-          <p>Referral ID: {selectedUser.displayName || "N/A"}</p>
-        </div>
-      )}
-    </div>
-  );
+  const handleUserSelect = (user) => {
+    setSelectedUser(user);
+    setFormData((prev) => ({
+      ...prev,
+      referralId: user.displayName || "",
+    }));
+  };
+
+  const handlePlanChange = (e) => {
+    const planId = e.target.value;
+    const plan = plans.find(p => p.id === planId);
+    setSelectedPlan(plan);
+    setFormData(prev => ({
+      ...prev,
+      investmentPlan: plan?.name || "",
+      investmentAmount: plan?.amount || 0
+    }));
+  };
 
   return (
     <div className="book-asset-container">
@@ -333,11 +333,16 @@ const BookAsset = () => {
           to={`/projects/${projectId}`} 
           className="back-button"
           state={{ project: projectData }}
+          onClick={(e) => {
+            if (!projectId) {
+              e.preventDefault();
+              navigate('/projects');
+            }
+          }}
         >
           ← Back to Project
         </Link>
         <h2>Book Asset</h2>
-        
       </div>
 
       <form onSubmit={handleSubmit} className="booking-form">
@@ -361,11 +366,12 @@ const BookAsset = () => {
               onChange={(e) => setBookingType(e.target.value)}
             />
             Non-member
-          </label>
+          </label>{" "}
         </div>
 
-        <UserSearch />
-        {bookingType === "non-member" && (
+        {bookingType === "member" ? (
+          <UserSearchSelect onUserSelect={handleUserSelect} />
+        ) : (
           <div className="non-member-form">
             <h3>Non-member Details</h3>
             <div className="form-group">
@@ -431,10 +437,33 @@ const BookAsset = () => {
           </div>
         </div>
 
+        <div className="form-group">
+          <label>Investment Plan</label>
+          <select
+            name="investmentPlan"
+            value={selectedPlan?.id || ""}
+            onChange={handlePlanChange}
+            required
+          >
+            <option value="">Select Investment Plan</option>
+            {plans.map((plan) => (
+              <option key={plan.id} value={plan.id}>
+                {plan.name} - ₹{formatIndianPrice(plan.amount)}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <div className="pricing-details">
           <h3>Pricing Details</h3>
-          <div className="price-grid">            {["Residential Plot", "Commercial Plot", "Villa"].includes(assetType) && (
-              <>                <div className="price-item">
+          <div className="price-grid">
+            {" "}
+            {["Residential Plot", "Commercial Plot", "Villa"].includes(
+              assetType
+            ) && (
+              <>
+                {" "}
+                <div className="price-item">
                   <span className="label">Price per sq.ft</span>
                   <span className="value">
                     ₹{formatIndianPrice(projectData.price || 0)}/sq.ft
@@ -442,9 +471,7 @@ const BookAsset = () => {
                 </div>
                 <div className="price-item">
                   <span className="label">Total Area</span>
-                  <span className="value">
-                    {formData.area || '0'} sq.ft
-                  </span>
+                  <span className="value">{formData.area || "0"} sq.ft</span>
                 </div>
               </>
             )}
@@ -455,7 +482,7 @@ const BookAsset = () => {
               </span>
             </div>
             <div className="price-item highlight">
-              <span className="label">Discount ({projectData.discount}%)</span>
+              <span className="label">Discount ({pricing.discountPercent || 0}%)</span>
               <span className="value">
                 ₹{formatIndianPrice(pricing.discount)}
               </span>

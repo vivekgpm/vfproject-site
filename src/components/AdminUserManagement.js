@@ -191,9 +191,8 @@ function AdminUserManagement() {
                     ["bdaId", "BDA ID"],
                     ["phone", "Phone"],
                     ["investmentPlan", "Investment Plan"],
-                    ["referralId", "Referral ID"],
-                    ["role", "Role"],
-                    ["createdAt", "Created At"],
+                    ["referralId", "Referral ID"],                   
+                    ["createdAt", "Created On"],
                   ].map(([field, label]) => (
                     <th
                       key={field}
@@ -213,7 +212,7 @@ function AdminUserManagement() {
                     <td>{user.phone}</td>
                     <td>{user.investmentPlan}</td>
                     <td>{user.referralId || "N/A"}</td>
-                    <td>{user.role}</td>
+                   
                     <td>{formatDate(user.createdAt) || "N/A"}</td>
                   </tr>
                 ))}

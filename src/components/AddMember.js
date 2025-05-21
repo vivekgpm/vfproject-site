@@ -4,7 +4,6 @@ import "../components/AppStyles.css";
 import {
   getFirestore,
   doc,
-  
   getDoc,
   collection,
   addDoc,
@@ -14,6 +13,8 @@ import {
   limit,
 } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { getAllPlans } from "../api/planApi";
+import UserSearchSelect from "./UserSearchSelect";
 
 import "../components/AppStyles.css"; // Import your CSS styles
 
@@ -31,6 +32,7 @@ const AddMember = () => {
   });
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [plans, setPlans] = useState([]);
   const navigate = useNavigate();
   const db = getFirestore(); // Get Firestore instance
   const [isAdmin, setIsAdmin] = useState(false);
@@ -76,6 +78,20 @@ const AddMember = () => {
     generateBdaId();
   }, []);
 
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const plansData = await getAllPlans();
+        setPlans(plansData);
+      } catch (error) {
+        console.error("Error fetching plans:", error);
+        setErrorMessage("Error loading investment plans");
+      }
+    };
+
+    fetchPlans();
+  }, []);
+
   const generateBdaId = async () => {
     try {
       // Get the last BDA ID from the database
@@ -99,6 +115,21 @@ const AddMember = () => {
     }
   };
 
+  const handlePhoneChange = (e) => {
+    const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+    setFormData(prev => ({
+      ...prev,
+      phone: value
+    }));
+  };
+
+  const handleReferralSelect = (user) => {
+    setFormData(prev => ({
+      ...prev,
+      referralId: user.displayName || ""
+    }));
+  };
+
   const handleCreateUser = async (e) => {
     e.preventDefault();
     setErrorMessage("");
@@ -110,13 +141,13 @@ const AddMember = () => {
     }
 
     try {
-      // Convert plan name to amount
-      const planAmount = formData.investmentPlan === "Economy Plan" ? "5" : "20";
+      const selectedPlan = plans.find(p => p.id === formData.investmentPlan);
+      const planAmount = selectedPlan ? selectedPlan.amount : 0;
 
       const userData = {
         ...formData,
         bdaId,
-        investmentPlan: planAmount + " Lacs",
+        investmentPlan: planAmount,
         createdAt: new Date(),
       };
 
@@ -184,8 +215,9 @@ const AddMember = () => {
                   id="phone"
                   name="phone"
                   value={formData.phone}
-                  onChange={handleInputChange}
+                  onChange={handlePhoneChange}
                   required
+                  maxLength="10"
                   pattern="[0-9]{10}"
                   title="Please enter a valid 10-digit phone number"
                 />
@@ -215,20 +247,17 @@ const AddMember = () => {
                   required
                 >
                   <option value="">Select a plan</option>
-                  <option value="Economy Plan">Economy Plan</option>
-                  <option value="Premium Plan">Premium Plan</option>
+                  {plans.map((plan) => (
+                    <option key={plan.id} value={plan.id}>
+                      {plan.planName}
+                    </option>
+                  ))}
                 </select>
               </div>
 
               <div className="form-group">
-                <label htmlFor="referralId">Referral ID:</label>
-                <input
-                  type="text"
-                  id="referralId"
-                  name="referralId"
-                  value={formData.referralId}
-                  onChange={handleInputChange}
-                />
+                <label>Referral ID:</label>
+                <UserSearchSelect onUserSelect={handleReferralSelect} />
               </div>
 
               <div className="form-group">
@@ -238,9 +267,9 @@ const AddMember = () => {
                   name="role"
                   value={formData.role}
                   onChange={handleInputChange}
+                  disabled
                 >
                   <option value="user">User</option>
-                  <option value="admin">Admin</option>
                 </select>
               </div>
             </div>

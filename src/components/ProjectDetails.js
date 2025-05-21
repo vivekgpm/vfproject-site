@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "../firebase";
 import "../components/AppStyles.css";
 import { useAuth } from "../contexts/AuthContext";
+import { getProjectById } from "../api/projectApi";
 
 // Import images
 import villa from "../assets/images/villa.jpg";
@@ -14,7 +13,8 @@ import cc from "../assets/images/img100.jpg";
 const ProjectDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();  const [project, setProject] = useState(null);
+  const location = useLocation();
+  const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { user } = useAuth();
@@ -34,9 +34,8 @@ const ProjectDetails = () => {
         return defaultImage;
     }
   };
-
   useEffect(() => {
-    const fetchProjectAndTransactions = async () => {
+    const fetchProjectDetails = async () => {
       try {
         setLoading(true);
         setError(null);
@@ -47,12 +46,8 @@ const ProjectDetails = () => {
         if (location.state?.project) {
           projectData = location.state.project;
         } else {
-          // If not in location state, fetch from Firebase
-          const projectDoc = await getDoc(doc(db, "projects", id));
-          if (!projectDoc.exists()) {
-            throw new Error("Project not found in database");
-          }
-          projectData = { id: projectDoc.id, ...projectDoc.data() };
+          // If not in location state, fetch from API
+          projectData = await getProjectById(id);
         }
 
         if (!projectData) {
@@ -69,7 +64,7 @@ const ProjectDetails = () => {
     };
 
     if (id) {
-      fetchProjectAndTransactions();
+      fetchProjectDetails();
     }
   }, [id, location.state]);
 
@@ -182,10 +177,18 @@ const ProjectDetails = () => {
   };
 
   const handleBooking = () => {
-    const isPerSqFtPricing = ["Residential Plot", "Commercial Plot", "Villa"].includes(project.type);
-    const areaSqFt = parseFloat(project.area?.replace(/[^0-9.]/g, '') || 0);
-    const pricePerSqFt = isPerSqFtPricing ? project.pricePerSqFt || (project.price / areaSqFt) : 0;
-    const totalPrice = isPerSqFtPricing ? (pricePerSqFt * areaSqFt) : (project.price || 5000000);
+    const isPerSqFtPricing = [
+      "Residential Plot",
+      "Commercial Plot",
+      "Villa",
+    ].includes(project.type);
+    const areaSqFt = parseFloat(project.area?.replace(/[^0-9.]/g, "") || 0);
+    const pricePerSqFt = isPerSqFtPricing
+      ? project.pricePerSqFt || project.price / areaSqFt
+      : 0;
+    const totalPrice = isPerSqFtPricing
+      ? pricePerSqFt * areaSqFt
+      : project.price || 5000000;
 
     navigate(`/book-asset/${project.id}/${project.type}`, {
       state: {
@@ -199,20 +202,16 @@ const ProjectDetails = () => {
         discount: project.discount?.replace("%", "") || "0",
         image: getProjectImage(project.type),
         description: project.description,
-        price: totalPrice
+        price: totalPrice,
       },
     });
   };
 
   return (
     <div className="project-details-page">
-      <Link 
-          to={`/projects/`} 
-          className="back-button"
-          
-        >
-          ← Back to Projects
-        </Link>
+      <Link to={`/projects/`} className="back-button">
+        ← Back to Projects
+      </Link>
       <div
         className="project-hero"
         style={{
@@ -247,14 +246,18 @@ const ProjectDetails = () => {
                 <div className="detail-item">
                   <span className="detail-label">Price</span>
                   <span className="detail-value">
-                    {["Residential Plot", "Commercial Plot", "Villa"].includes(project.type) ? (
+                    {["Residential Plot", "Commercial Plot", "Villa"].includes(
+                      project.type
+                    ) ? (
                       <>
-                        ₹{project.price ? project.price.toLocaleString() : "0"}/sq.ft
+                        ₹{project.price ? project.price.toLocaleString() : "0"}
+                        /sq.ft
                         <br />
-                       
                       </>
                     ) : (
-                      <>₹{project.price ? project.price.toLocaleString() : "0"}</>
+                      <>
+                        ₹{project.price ? project.price.toLocaleString() : "0"}
+                      </>
                     )}
                   </span>
                 </div>
@@ -273,7 +276,10 @@ const ProjectDetails = () => {
                 </ul>
               </div>
             </div>
-          </div>          <div className="project-sidebar">            {project.discount && (
+          </div>
+          <div className="project-sidebar">
+            {" "}
+            {project.discount && (
               <div className="discount-banner">
                 <h3>Special Offer</h3>
                 <p className="discount-badge">
@@ -281,7 +287,7 @@ const ProjectDetails = () => {
                 </p>
               </div>
             )}
-            {user?.role === 'admin' && (
+            {user?.role === "admin" && (
               <div className="booking-card">
                 <button className="book-now-btn" onClick={handleBooking}>
                   Book Now
@@ -296,7 +302,7 @@ const ProjectDetails = () => {
                 </Link>
               </div>
             )}
-            {user && user.role !== 'admin' && (
+            {user && user.role !== "admin" && (
               <div className="booking-card">
                 <p>Only administrators can book properties.</p>
                 <p>Please contact an administrator for assistance.</p>
