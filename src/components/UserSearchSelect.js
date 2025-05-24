@@ -107,7 +107,7 @@ const UserSearchSelect = ({ onUserSelect }) => {
       {selectedUser && (
         <div className="selected-user-info">
           <p>Selected: {selectedUser.displayName}</p>
-          <p>Referral ID: {selectedUser.displayName || "N/A"}</p>
+          <p>Referral ID: {selectedUser.bdaId || "N/A"}</p>
         </div>
       )}
     </div>

@@ -1,23 +1,38 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import "../components/AppStyles.css";
 import {
   getFirestore,
   doc,
   getDoc,
   collection,
-  addDoc,
   getDocs,
   query,
   orderBy,
   limit,
+  where
 } from "firebase/firestore";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
+import {
+  getAuth,
+  onAuthStateChanged,
+  
+} from "firebase/auth";
 import { getAllPlans } from "../api/planApi";
 import UserSearchSelect from "./UserSearchSelect";
+import "../components/AppStyles.css";
 
-import "../components/AppStyles.css"; // Import your CSS styles
+// Get API URL from environment variable or use default
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
+// Initialize Firebase services
+let db;
+let auth;
+
+try {
+  db = getFirestore();
+  auth = getAuth();
+} catch (error) {
+  console.error("Error initializing Firebase:", error);
+}
 
 const AddMember = () => {
   const [formData, setFormData] = useState({
@@ -34,11 +49,9 @@ const AddMember = () => {
   const [successMessage, setSuccessMessage] = useState("");
   const [plans, setPlans] = useState([]);
   const navigate = useNavigate();
-  const db = getFirestore(); // Get Firestore instance
   const [isAdmin, setIsAdmin] = useState(false);
-  const auth = getAuth();
   const [isLoading, setIsLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState(null); // Add state for current user
+  const [currentUser, setCurrentUser] = useState(null);
   const [bdaId, setBdaId] = useState("");
 
   const handleInputChange = (e) => {
@@ -74,9 +87,32 @@ const AddMember = () => {
     return () => unsubscribe();
   }, [auth, db]);
 
+  const generateBdaId = useCallback(async () => {
+    try {
+      // Get the last BDA ID from the database
+      const usersRef = collection(db, "users");
+      const q = query(usersRef, orderBy("bdaId", "desc"), limit(1));
+      const querySnapshot = await getDocs(q);
+
+      let newNumber = 1;
+      if (!querySnapshot.empty) {
+        const lastBdaId = querySnapshot.docs[0].data().bdaId;
+        const lastNumber = parseInt(lastBdaId.replace("BDA", ""));
+        newNumber = lastNumber + 1;
+      }
+
+      // Format the new BDA ID
+      const newBdaId = `BDA${newNumber.toString().padStart(4, "0")}`;
+      setBdaId(newBdaId);
+    } catch (error) {
+      console.error("Error generating BDA ID:", error);
+      setErrorMessage("Error generating BDA ID");
+    }
+  }, [db]);
+
   useEffect(() => {
     generateBdaId();
-  }, []);
+  }, [generateBdaId]);
 
   useEffect(() => {
     const fetchPlans = async () => {
@@ -92,41 +128,18 @@ const AddMember = () => {
     fetchPlans();
   }, []);
 
-  const generateBdaId = async () => {
-    try {
-      // Get the last BDA ID from the database
-      const usersRef = collection(db, "users");
-      const q = query(usersRef, orderBy("bdaId", "desc"), limit(1));
-      const querySnapshot = await getDocs(q);
-      
-      let newNumber = 1;
-      if (!querySnapshot.empty) {
-        const lastBdaId = querySnapshot.docs[0].data().bdaId;
-        const lastNumber = parseInt(lastBdaId.replace("BDA", ""));
-        newNumber = lastNumber + 1;
-      }
-      
-      // Format the new BDA ID
-      const newBdaId = `BDA${newNumber.toString().padStart(4, "0")}`;
-      setBdaId(newBdaId);
-    } catch (error) {
-      console.error("Error generating BDA ID:", error);
-      setErrorMessage("Error generating BDA ID");
-    }
-  };
-
   const handlePhoneChange = (e) => {
-    const value = e.target.value.replace(/\D/g, '').slice(0, 10);
-    setFormData(prev => ({
+    const value = e.target.value.replace(/\D/g, "").slice(0, 10);
+    setFormData((prev) => ({
       ...prev,
-      phone: value
+      phone: value,
     }));
   };
 
   const handleReferralSelect = (user) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      referralId: user.displayName || ""
+      referralId: user.bdaId || "",
     }));
   };
 
@@ -141,21 +154,92 @@ const AddMember = () => {
     }
 
     try {
+      // Store admin's current session info
+      const adminUid = currentUser.uid;
+      
+
+      // Get fresh ID token
+      const idToken = await currentUser.getIdToken(true);
+
+      // Check if email already exists in Firestore
+      const usersRef = collection(db, "users");
+      const q = query(usersRef, where("email", "==", formData.email));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        setErrorMessage("This email address is already registered. Please use a different email.");
+        return;
+      }
+
       const selectedPlan = plans.find(p => p.id === formData.investmentPlan);
       const planAmount = selectedPlan ? selectedPlan.amount : 0;
 
-      const userData = {
-        ...formData,
-        bdaId,
-        investmentPlan: planAmount,
-        createdAt: new Date(),
-      };
+      // Make API call with proper authentication
+      const response = await fetch(`${API_URL}/api/create-user`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          userData: {
+            ...formData,
+            bdaId,
+            investmentPlan: planAmount,
+            uid: null, // Will be set by the API
+            role: "user"
+          },
+          transactionData: {
+            amount: planAmount,
+            type: "INVESTMENT",
+            status: "PENDING",
+            createdBy: adminUid,
+            planId: formData.investmentPlan,
+            description: `Initial investment for plan ${selectedPlan?.planName || 'Unknown'}`
+          }
+        })
+      });
 
-      await addDoc(collection(db, "users"), userData);
-      navigate("/admin/newmember");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create user');
+      }
+
+      await response.json();
+      
+      setSuccessMessage("Member added successfully!");
+      
+      // Reset form
+      setFormData({
+        email: "",
+        displayName: "",
+        phone: "",
+        address: "",
+        investmentPlan: "",
+        referralId: "",
+        role: "user",
+        password: "Complex123!",
+      });
+      
+      // Generate new BDA ID for next user
+      await generateBdaId();
+      navigate('/admin/newmember');
+
     } catch (error) {
       console.error("Error adding member:", error);
-      setErrorMessage("Error adding member. Please try again.");
+      
+      // Handle specific errors
+      if (error.message.includes('email-already-in-use')) {
+        setErrorMessage("This email address is already registered. Please use a different email.");
+      } else if (error.message.includes('invalid-email')) {
+        setErrorMessage("Please enter a valid email address.");
+      } else if (error.message.includes('weak-password')) {
+        setErrorMessage("Password is too weak. Please use a stronger password.");
+      } else {
+        setErrorMessage(error.message || "Error adding member. Please try again.");
+      }
     }
   };
 

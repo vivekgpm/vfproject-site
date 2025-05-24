@@ -6,7 +6,7 @@ const admin = require('firebase-admin');
 admin.initializeApp({
   credential: admin.credential.cert({
     project_id:"vvpvf-9f894",
-    privateKey: process.env.FIREBASE_PRIVAE_KEY?.replace(/\\n/g, '\n'),
+    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
     clientEmail: process.env.FIREBASE_CLIENT_EMAIL
   }),
   databaseURL: `https://vvpvf-9f894-default-rtdb.firebaseio.com`
@@ -50,17 +50,19 @@ exports.createNewUser = async (req, res) => {
       displayName: displayName || email.split('@')[0]
     });
     
-    // 4. Store user data in Firestore
+    // 4. Store user data in Firestore (excluding password)
+    const userData = {
+      email,
+      displayName: displayName || email.split('@')[0],
+      role,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdBy: requestorUid
+    };
+    
     await admin.firestore()
       .collection('users')
       .doc(userRecord.uid)
-      .set({
-        email,
-        displayName: displayName || email.split('@')[0],
-        role,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        createdBy: requestorUid
-      });
+      .set(userData);
     
     // 5. Set custom claims (for role-based auth)
     await admin.auth().setCustomUserClaims(userRecord.uid, { role });

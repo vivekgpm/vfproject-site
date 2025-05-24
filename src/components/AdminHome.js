@@ -171,7 +171,7 @@ const AdminHome = () => {
                 <td>{new Date(transaction.createdAt?.toDate()).toLocaleDateString()}</td>
                 <td>{transaction.userDisplayName || 'N/A'}</td>
                 <td>{transaction.projectName || 'N/A'}</td>
-                <td>₹{transaction.pricing.discount?.toLocaleString() || '0'}</td>
+                <td>₹{transaction.projectName || '0'}</td>
                 <td>{transaction.paymentDate ? new Date(transaction.paymentDate).toLocaleDateString() : '-'}</td>
                 <td>
                   <span className={`status-badge ${transaction.status?.toLowerCase()}`}>
