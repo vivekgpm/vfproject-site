@@ -158,7 +158,7 @@ const AdminHome = () => {
             <tr>
               <th>Transaction Date</th>
               <th>Member Name</th>
-              <th>Project</th>
+              <th>Type</th>
               <th>Amount</th>
               <th>Payment Date</th>
               <th>Status</th>
@@ -169,9 +169,9 @@ const AdminHome = () => {
             {paginatedTransactions.map((transaction) => (
               <tr key={transaction.id}>
                 <td>{new Date(transaction.createdAt?.toDate()).toLocaleDateString()}</td>
-                <td>{transaction.userDisplayName || 'N/A'}</td>
-                <td>{transaction.projectName || 'N/A'}</td>
-                <td>₹{transaction.projectName || '0'}</td>
+                <td>{transaction.displayName || 'N/A'}</td>
+                <td>{transaction.type || 'N/A'}</td>
+                <td>₹{transaction.amount || '0'}</td>
                 <td>{transaction.paymentDate ? new Date(transaction.paymentDate).toLocaleDateString() : '-'}</td>
                 <td>
                   <span className={`status-badge ${transaction.status?.toLowerCase()}`}>

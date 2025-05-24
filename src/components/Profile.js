@@ -93,11 +93,11 @@ const Profile = () => {
       <div className="investment-highlights">
         <div className="highlight-card investment-plan">
           <div className="highlight-header">
-            <h3>Current Investment Plan</h3>
+            <h3>Investmented Amount</h3>
           </div>
           <div className="highlight-content">
             <span className="highlight-value">
-              {userDetails?.investmentPlan ? `${userDetails.investmentPlan} Lacs` : 'Not set'}
+              {userDetails?.investmentPlan ? `${userDetails.investmentPlan}` : 'Not set'}
             </span>
           </div>
         </div>
@@ -118,17 +118,19 @@ const Profile = () => {
             <table className="transactions-table">
               <thead>
                 <tr>
-                  <th>Date</th>
-                  <th>Project</th>
+                  <th>Transaction Date</th>
+                  <th>Type</th>
                   <th>Amount</th>
+                  <th>Payment Date</th>
                 </tr>
               </thead>
               <tbody>
                 {transactions.map((transaction) => (
                   <tr key={transaction.id}>
                     <td>{transaction.createdAt?.toDate().toLocaleDateString()}</td>
-                    <td>{transaction.projectName}</td>
-                    <td>₹{transaction.pricing.discount?.toLocaleString()}</td>
+                    <td>{transaction.type}</td>
+                    <td>₹{transaction.amount?.toLocaleString()}</td>
+                    <td>{transaction.paymentDate}</td>
                   </tr>
                 ))}
               </tbody>

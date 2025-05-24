@@ -9,7 +9,9 @@ import {
   query,
   orderBy,
   limit,
-  where
+  where,
+  addDoc,
+  serverTimestamp
 } from "firebase/firestore";
 import {
   getAuth,
@@ -53,6 +55,8 @@ const AddMember = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
   const [bdaId, setBdaId] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
   const handleInputChange = (e) => {
     setFormData({
@@ -139,7 +143,7 @@ const AddMember = () => {
   const handleReferralSelect = (user) => {
     setFormData((prev) => ({
       ...prev,
-      referralId: user.bdaId || "",
+      referralId: user.uid,
     }));
   };
 
@@ -147,9 +151,11 @@ const AddMember = () => {
     e.preventDefault();
     setErrorMessage("");
     setSuccessMessage("");
+    setIsSubmitting(true);
 
     if (!isAdmin) {
       setErrorMessage("You must be an admin to create users");
+      setIsSubmitting(false);
       return;
     }
 
@@ -157,7 +163,6 @@ const AddMember = () => {
       // Store admin's current session info
       const adminUid = currentUser.uid;
       
-
       // Get fresh ID token
       const idToken = await currentUser.getIdToken(true);
 
@@ -191,14 +196,19 @@ const AddMember = () => {
             uid: null, // Will be set by the API
             role: "user"
           },
-          transactionData: {
-            amount: planAmount,
-            type: "INVESTMENT",
+          /*transactionData: {
+            amount: formData.referralId ? planAmount : 0,
+            type: "Referral",
             status: "PENDING",
             createdBy: adminUid,
             planId: formData.investmentPlan,
-            description: `Initial investment for plan ${selectedPlan?.planName || 'Unknown'}`
-          }
+            description: `Investment in ${selectedPlan?.planName || 'Unknown'} plan`
+          },
+          referralData: formData.referralId ? {
+            referrerId: formData.referralId,
+            investmentAmount: planAmount,
+            planName: selectedPlan?.planName
+          } : null*/
         })
       });
 
@@ -207,9 +217,45 @@ const AddMember = () => {
         throw new Error(errorData.error || 'Failed to create user');
       }
 
-      await response.json();
+      const responseData = await response.json();
+      
+      // Handle referral bonus if user was created successfully and has a referrer
+      if (responseData.uid && formData.referralId) {
+        try {
+          // Get referrer's data using UID
+          const referrerDoc = await getDoc(doc(db, "users", formData.referralId));
+          
+          if (referrerDoc.exists()) {
+            const referrerData = referrerDoc.data();
+            const referrerPlan = plans.find(p => p.amount === referrerData.investmentPlan);
+            
+            if (referrerPlan) {
+              const referralBonus = (planAmount * referrerPlan.referralPercentage) / 100;
+              
+              // Create referral bonus transaction
+              await addDoc(collection(db, "transactions"), {
+                userId: referrerData.bdaId,
+                type: "Referral",
+                amount: referralBonus,
+                referralBonusAmount: referralBonus,
+                status: "PENDING",
+                description: `Referral bonus for referring ${formData.displayName || formData.email}`,
+                referredUserId: responseData.uid,
+                referredUserPlan: selectedPlan.planName,
+                referredUserAmount: planAmount,
+                referralPercentage: referrerPlan.referralPercentage,
+                createdAt: serverTimestamp(),
+                createdBy: adminUid
+              });
+            }
+          }
+        } catch (error) {
+          console.error("Error creating referral transaction:", error);
+        }
+      }
       
       setSuccessMessage("Member added successfully!");
+      setShowSuccessPopup(true);
       
       // Reset form
       setFormData({
@@ -225,7 +271,12 @@ const AddMember = () => {
       
       // Generate new BDA ID for next user
       await generateBdaId();
-      navigate('/admin/newmember');
+      
+      // Close popup after 3 seconds and navigate
+      setTimeout(() => {
+        setShowSuccessPopup(false);
+        navigate('/admin/newmember');
+      }, 3000);
 
     } catch (error) {
       console.error("Error adding member:", error);
@@ -240,6 +291,8 @@ const AddMember = () => {
       } else {
         setErrorMessage(error.message || "Error adding member. Please try again.");
       }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -255,6 +308,16 @@ const AddMember = () => {
           <i className="fas fa-arrow-left"></i> Back to Dashboard
         </Link>
       </div>
+
+      {showSuccessPopup && (
+        <div className="success-popup">
+          <div className="success-popup-content">
+            <i className="fas fa-check-circle"></i>
+            <h3>Success!</h3>
+            <p>Member has been added successfully.</p>
+          </div>
+        </div>
+      )}
 
       <div className="form-container">
         {errorMessage && <div className="error-message">{errorMessage}</div>}
@@ -359,7 +422,19 @@ const AddMember = () => {
             </div>
           </div>
           <div className="form-actions">
-            <button type="submit">Add Member</button>
+            <button 
+              type="submit" 
+              className="btn-primary"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <i className="fas fa-spinner fa-spin"></i> Adding Member...
+                </>
+              ) : (
+                'Add Member'
+              )}
+            </button>
           </div>
         </form>
       </div>

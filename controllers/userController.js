@@ -22,7 +22,6 @@ exports.createNewUser = async (req, res) => {
     }
     
     const idToken = authHeader.split('Bearer ')[1];
-    
     const decodedToken = await admin.auth().verifyIdToken(idToken);
     const requestorUid = decodedToken.uid;
     
@@ -37,10 +36,10 @@ exports.createNewUser = async (req, res) => {
     }
     
     // 2. Extract new user details from request
-    const { email, password, displayName, role = 'user' } = req.body;
+    const { email, password, displayName, role = 'user', referralId, investmentPlan } = req.body;
     
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required.' });
+    if (!email || !password || !investmentPlan) {
+      return res.status(400).json({ error: 'Email, password, and investment plan are required.' });
     }
     
     // 3. Create the user in Firebase Auth
@@ -50,21 +49,47 @@ exports.createNewUser = async (req, res) => {
       displayName: displayName || email.split('@')[0]
     });
     
-    // 4. Store user data in Firestore (excluding password)
+    // 4. Get investment plan details
+    const planDoc = await admin.firestore()
+      .collection('planMaster')
+      .doc(investmentPlan)
+      .get();
+    
+    if (!planDoc.exists) {
+      throw new Error('Invalid investment plan');
+    }
+    
+    const planData = planDoc.data();
+    
+    // 5. Handle referral bonus if referrer exists
+    
+    
+    // 6. Store user data in Firestore (excluding password)
     const userData = {
       email,
       displayName: displayName || email.split('@')[0],
       role,
+      investmentPlan,
+      planAmount: planData.amount,
+      referralId: referralId || null,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       createdBy: requestorUid
     };
     
-    await admin.firestore()
-      .collection('users')
-      .doc(userRecord.uid)
-      .set(userData);
+    // Create user document and referral transaction in a batch
+    const batch = admin.firestore().batch();
     
-    // 5. Set custom claims (for role-based auth)
+    // Add user document
+    const userRef = admin.firestore().collection('users').doc(userRecord.uid);
+    batch.set(userRef, userData);
+    
+   
+    
+    // Commit the batch
+    await batch.commit();
+    console.log('Batch committed successfully');
+    
+    // 7. Set custom claims (for role-based auth)
     await admin.auth().setCustomUserClaims(userRecord.uid, { role });
     
     return res.status(201).json({ 
@@ -313,3 +338,90 @@ async function isUserAdmin(uid) {
   
   return userDoc.exists && userDoc.data().role === 'admin';
 }
+
+// Get plan data from planMaster collection
+exports.getPlanData = async (req, res) => {
+  try {
+    // Verify authentication
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Unauthorized. Missing or invalid token.' });
+    }
+    
+    const idToken = authHeader.split('Bearer ')[1];
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    const requestorUid = decodedToken.uid;
+    
+    // Check if requestor is admin
+    const requestorDoc = await admin.firestore()
+      .collection('users')
+      .doc(requestorUid)
+      .get();
+    
+    if (!requestorDoc.exists || requestorDoc.data().role !== 'admin') {
+      return res.status(403).json({ error: 'Unauthorized. Only admins can access plan data.' });
+    }
+    
+    // Get plan data from Firestore
+    const plansSnapshot = await admin.firestore()
+      .collection('planMaster')
+      .get();
+    
+    const plans = [];
+    plansSnapshot.forEach(doc => {
+      plans.push({
+        id: doc.id,
+        ...doc.data()
+      });
+    });
+    
+    return res.status(200).json({ plans });
+    
+  } catch (error) {
+    console.error('Error getting plan data:', error);
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+// Get referral bonus amount based on referrer's plan
+exports.calculateReferralBonus = async (referrerId, investmentAmount) => {
+  try {
+    // Get referrer's data
+    const referrerDoc = await admin.firestore()
+      .collection('users')
+      .doc(referrerId)
+      .get();
+    
+    if (!referrerDoc.exists) {
+      throw new Error('Referrer not found');
+    }
+    
+    const referrerData = referrerDoc.data();
+    
+    // Get referrer's plan data
+    const planDoc = await admin.firestore()
+      .collection('planMaster')
+      .doc(referrerData.investmentPlan)
+      .get();
+    
+    if (!planDoc.exists) {
+      throw new Error('Referrer plan not found');
+    }
+    
+    const planData = planDoc.data();
+    
+    // Calculate referral bonus
+    const referralBonus = (investmentAmount * planData.referralPercentage) / 100;
+    
+    return {
+      amount: referralBonus,
+      planId: referrerData.investmentPlan,
+      planName: planData.planName,
+      referralPercentage: planData.referralPercentage
+    };
+    
+  } catch (error) {
+    console.error('Error calculating referral bonus:', error);
+    throw error;
+  }
+};

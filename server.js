@@ -122,13 +122,13 @@ app.post('/api/create-user', async (req, res) => {
       .set(userData);
 
     // Add user ID to transaction data
-    transactionData.userId = userRecord.uid;
-    transactionData.createdAt = admin.firestore.FieldValue.serverTimestamp();
+   // transactionData.userId = userRecord.uid;
+   // transactionData.createdAt = admin.firestore.FieldValue.serverTimestamp();
 
     // Create transaction document
-    await admin.firestore()
-      .collection('transactions')
-      .add(transactionData);
+   // await admin.firestore()
+   //   .collection('transactions')
+   //   .add(transactionData);
 
     res.status(201).json({ 
       message: 'User created successfully',
@@ -142,6 +142,48 @@ app.post('/api/create-user', async (req, res) => {
 
 // Routes
 app.use('/api', userRoutes);
+
+// Get plan data endpoint
+app.get('/api/plans', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Unauthorized. Missing or invalid token.' });
+    }
+
+    const idToken = authHeader.split('Bearer ')[1];
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    const requestorUid = decodedToken.uid;
+
+    // Check if requestor is admin
+    const requestorDoc = await admin.firestore()
+      .collection('users')
+      .doc(requestorUid)
+      .get();
+
+    if (!requestorDoc.exists || requestorDoc.data().role !== 'admin') {
+      return res.status(403).json({ error: 'Unauthorized. Only admins can access plan data.' });
+    }
+
+    // Get plan data from Firestore
+    const plansSnapshot = await admin.firestore()
+      .collection('planMaster')
+      .get();
+
+    const plans = [];
+    plansSnapshot.forEach(doc => {
+      plans.push({
+        id: doc.id,
+        ...doc.data()
+      });
+    });
+
+    res.status(200).json({ plans });
+  } catch (error) {
+    console.error('Error getting plan data:', error);
+    res.status(500).json({ error: error.message || 'Internal server error' });
+  }
+});
 
 // Basic route for testing
 app.get('/', (req, res) => {
