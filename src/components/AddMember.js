@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   getFirestore,
@@ -11,19 +11,15 @@ import {
   limit,
   where,
   addDoc,
-  serverTimestamp
+  serverTimestamp,
 } from "firebase/firestore";
-import {
-  getAuth,
-  onAuthStateChanged,
-  
-} from "firebase/auth";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getAllPlans } from "../api/planApi";
 import UserSearchSelect from "./UserSearchSelect";
 import "../components/AppStyles.css";
 
 // Get API URL from environment variable or use default
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+const EXP_API_URL = process.env.REACT_APP_API_URL_2 || "http://localhost:3001"; // Fallback to localhost if not set
 
 // Initialize Firebase services
 let db;
@@ -36,16 +32,80 @@ try {
   console.error("Error initializing Firebase:", error);
 }
 
+// List of Indian states
+const indianStates = [
+  "Andhra Pradesh",
+  "Arunachal Pradesh",
+  "Assam",
+  "Bihar",
+  "Chhattisgarh",
+  "Goa",
+  "Gujarat",
+  "Haryana",
+  "Himachal Pradesh",
+  "Jharkhand",
+  "Karnataka",
+  "Kerala",
+  "Madhya Pradesh",
+  "Maharashtra",
+  "Manipur",
+  "Meghalaya",
+  "Mizoram",
+  "Nagaland",
+  "Odisha",
+  "Punjab",
+  "Rajasthan",
+  "Sikkim",
+  "Tamil Nadu",
+  "Telangana",
+  "Tripura",
+  "Uttar Pradesh",
+  "Uttarakhand",
+  "West Bengal",
+];
+
+// List of countries (partial list - add more as needed)
+const countries = [
+  "India",
+  "Afghanistan",
+  "Australia",
+  "Bangladesh",
+  "Bhutan",
+  "Canada",
+  "China",
+  "France",
+  "Germany",
+  "Indonesia",
+  "Japan",
+  "Malaysia",
+  "Maldives",
+  "Nepal",
+  "New Zealand",
+  "Pakistan",
+  "Russia",
+  "Singapore",
+  "Sri Lanka",
+  "Thailand",
+  "United Arab Emirates",
+  "United Kingdom",
+  "United States",
+];
+
 const AddMember = () => {
   const [formData, setFormData] = useState({
     email: "",
     displayName: "",
     phone: "",
     address: "",
+    city: "",
+    state: "Karnataka",
+    country: "India",
     investmentPlan: "",
     referralId: "",
     role: "user",
     password: "Complex123!", // Default password
+    paymentMode: "Cash", // Default payment mode
+    remarks: "", // New field for remarks
   });
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -64,7 +124,6 @@ const AddMember = () => {
       [e.target.name]: e.target.value,
     });
   };
-
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -89,8 +148,7 @@ const AddMember = () => {
     });
 
     return () => unsubscribe();
-  }, [auth, db]);
-
+  }, []); // Removed auth and db from dependencies since they're initialized outside
   const generateBdaId = useCallback(async () => {
     try {
       // Get the last BDA ID from the database
@@ -112,7 +170,7 @@ const AddMember = () => {
       console.error("Error generating BDA ID:", error);
       setErrorMessage("Error generating BDA ID");
     }
-  }, [db]);
+  }, []); // Removed db from dependencies since it's initialized outside
 
   useEffect(() => {
     generateBdaId();
@@ -143,7 +201,7 @@ const AddMember = () => {
   const handleReferralSelect = (user) => {
     setFormData((prev) => ({
       ...prev,
-      referralId: user.uid,
+      referralId: user.uid || user.id,
     }));
   };
 
@@ -162,7 +220,7 @@ const AddMember = () => {
     try {
       // Store admin's current session info
       const adminUid = currentUser.uid;
-      
+
       // Get fresh ID token
       const idToken = await currentUser.getIdToken(true);
 
@@ -172,66 +230,74 @@ const AddMember = () => {
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
-        setErrorMessage("This email address is already registered. Please use a different email.");
+        setErrorMessage(
+          "This email address is already registered. Please use a different email."
+        );
         return;
       }
 
-      const selectedPlan = plans.find(p => p.id === formData.investmentPlan);
+      const selectedPlan = plans.find((p) => p.id === formData.investmentPlan);
       const planAmount = selectedPlan ? selectedPlan.amount : 0;
 
       // Make API call with proper authentication
-      const response = await fetch(`${API_URL}/api/create-user`, {
-        method: 'POST',
+      const response = await fetch(`${EXP_API_URL}/api/users`, {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
         },
         body: JSON.stringify({
           email: formData.email,
           password: formData.password,
+          investmentPlanId: selectedPlan.id,
+          investmentPlan: planAmount,
+          bdaId: bdaId,
+          address: formData.address,
+          phone: formData.phone,
+          city: formData.city,
+          state: formData.state,
+          country: formData.country,
+          displayName: formData.displayName,
+          referralId: formData.referralId || null,
+          paymentMode: formData.paymentMode,
+          remarks: formData.remarks,
           userData: {
             ...formData,
             bdaId,
             investmentPlan: planAmount,
             uid: null, // Will be set by the API
-            role: "user"
+            role: "user",
           },
-          /*transactionData: {
-            amount: formData.referralId ? planAmount : 0,
-            type: "Referral",
-            status: "PENDING",
-            createdBy: adminUid,
-            planId: formData.investmentPlan,
-            description: `Investment in ${selectedPlan?.planName || 'Unknown'} plan`
-          },
-          referralData: formData.referralId ? {
-            referrerId: formData.referralId,
-            investmentAmount: planAmount,
-            planName: selectedPlan?.planName
-          } : null*/
-        })
+        }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create user');
+        throw new Error(errorData.error || "Failed to create user");
       }
 
       const responseData = await response.json();
-      
+
       // Handle referral bonus if user was created successfully and has a referrer
       if (responseData.uid && formData.referralId) {
         try {
           // Get referrer's data using UID
-          const referrerDoc = await getDoc(doc(db, "users", formData.referralId));
-          
+          const referrerDoc = await getDoc(
+            doc(db, "users", formData.referralId)
+          );
+
           if (referrerDoc.exists()) {
             const referrerData = referrerDoc.data();
-            const referrerPlan = plans.find(p => p.amount === referrerData.investmentPlan);
-            
+            const referrerPlan = plans.find(
+              (p) =>
+                p.amount === referrerData.investmentPlan ||
+                referrerData.planAmount
+            );
+
             if (referrerPlan) {
-              const referralBonus = (planAmount * referrerPlan.referralPercentage) / 100;
-              
+              const referralBonus =
+                (planAmount * referrerPlan.referralPercentage) / 100;
+
               // Create referral bonus transaction
               await addDoc(collection(db, "transactions"), {
                 userId: referrerData.bdaId,
@@ -239,13 +305,15 @@ const AddMember = () => {
                 amount: referralBonus,
                 referralBonusAmount: referralBonus,
                 status: "PENDING",
-                description: `Referral bonus for referring ${formData.displayName || formData.email}`,
+                description: `Referral bonus for referring ${
+                  formData.displayName || formData.email
+                }`,
                 referredUserId: responseData.uid,
                 referredUserPlan: selectedPlan.planName,
                 referredUserAmount: planAmount,
                 referralPercentage: referrerPlan.referralPercentage,
                 createdAt: serverTimestamp(),
-                createdBy: adminUid
+                createdBy: adminUid,
               });
             }
           }
@@ -253,43 +321,51 @@ const AddMember = () => {
           console.error("Error creating referral transaction:", error);
         }
       }
-      
+
       setSuccessMessage("Member added successfully!");
-      setShowSuccessPopup(true);
-      
-      // Reset form
+      setShowSuccessPopup(true); // Reset form
       setFormData({
         email: "",
         displayName: "",
         phone: "",
         address: "",
+        city: "",
+        state: "Karnataka",
+        country: "India",
         investmentPlan: "",
         referralId: "",
         role: "user",
         password: "Complex123!",
+        paymentMode: "Cash",
+        remarks: "",
       });
-      
+
       // Generate new BDA ID for next user
       await generateBdaId();
-      
+
       // Close popup after 3 seconds and navigate
       setTimeout(() => {
         setShowSuccessPopup(false);
-        navigate('/admin/newmember');
+        navigate("/admin/newmember");
       }, 3000);
-
     } catch (error) {
       console.error("Error adding member:", error);
-      
+
       // Handle specific errors
-      if (error.message.includes('email-already-in-use')) {
-        setErrorMessage("This email address is already registered. Please use a different email.");
-      } else if (error.message.includes('invalid-email')) {
+      if (error.message.includes("email-already-in-use")) {
+        setErrorMessage(
+          "This email address is already registered. Please use a different email."
+        );
+      } else if (error.message.includes("invalid-email")) {
         setErrorMessage("Please enter a valid email address.");
-      } else if (error.message.includes('weak-password')) {
-        setErrorMessage("Password is too weak. Please use a stronger password.");
+      } else if (error.message.includes("weak-password")) {
+        setErrorMessage(
+          "Password is too weak. Please use a stronger password."
+        );
       } else {
-        setErrorMessage(error.message || "Error adding member. Please try again.");
+        setErrorMessage(
+          error.message || "Error adding member. Please try again."
+        );
       }
     } finally {
       setIsSubmitting(false);
@@ -303,7 +379,7 @@ const AddMember = () => {
   return (
     <div className="add-member-container">
       <div className="form-header">
-        <h2>New Member</h2>
+        <h2>New BDA Member Registration</h2>
         <Link to="/admin" className="back-button">
           <i className="fas fa-arrow-left"></i> Back to Dashboard
         </Link>
@@ -340,16 +416,37 @@ const AddMember = () => {
                   required
                 />
               </div>
+
               <div className="form-group">
-                <label htmlFor="email">Email:</label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formData.email}
+                <label htmlFor="state">State:</label>
+                <select
+                  id="state"
+                  name="state"
+                  value={formData.state}
                   onChange={handleInputChange}
                   required
-                />
+                >
+                  {indianStates.map((state) => (
+                    <option key={state} value={state}>
+                      {state}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label htmlFor="paymentMode">Payment Mode:</label>
+                <select
+                  id="paymentMode"
+                  name="paymentMode"
+                  value={formData.paymentMode}
+                  onChange={handleInputChange}
+                  required
+                >
+                  <option value="Cash">Cash</option>
+                  <option value="NEFT/RTGS">NEFT/RTGS</option>
+                  <option value="UPI">UPI</option>
+                  <option value="Cheque">Cheque</option>
+                </select>
               </div>
             </div>
 
@@ -369,6 +466,49 @@ const AddMember = () => {
                   title="Please enter a valid 10-digit phone number"
                 />
               </div>
+              <div className="form-group">
+                <label htmlFor="country">Country:</label>
+                <select
+                  id="country"
+                  name="country"
+                  value={formData.country}
+                  onChange={handleInputChange}
+                  required
+                >
+                  {countries.map((country) => (
+                    <option key={country} value={country}>
+                      {country}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="remarks">Remarks:</label>
+                <textarea
+                  id="remarks"
+                  name="remarks"
+                  value={formData.remarks}
+                  onChange={handleInputChange}
+                  rows="2"
+                  style={{ resize: "vertical" }}
+                />
+              </div>
+            </div>
+
+            {/* Column 3 */}
+            <div className="form-column">
+              <div className="form-group">
+                <label htmlFor="email">Email:</label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
 
               <div className="form-group">
                 <label htmlFor="address">Address:</label>
@@ -382,8 +522,19 @@ const AddMember = () => {
               </div>
             </div>
 
-            {/* Column 3 */}
+            {/* Column 4 */}
             <div className="form-column">
+              <div className="form-group">
+                <label htmlFor="city">City:</label>
+                <input
+                  type="text"
+                  id="city"
+                  name="city"
+                  value={formData.city}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
               <div className="form-group">
                 <label htmlFor="investmentPlan">Investment Plan:</label>
                 <select
@@ -407,7 +558,7 @@ const AddMember = () => {
                 <UserSearchSelect onUserSelect={handleReferralSelect} />
               </div>
 
-              <div className="form-group">
+              <div className="form-group" style={{ display: "none" }}>
                 <label htmlFor="role">Role:</label>
                 <select
                   id="role"
@@ -422,8 +573,8 @@ const AddMember = () => {
             </div>
           </div>
           <div className="form-actions">
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               className="btn-primary"
               disabled={isSubmitting}
             >
@@ -432,7 +583,7 @@ const AddMember = () => {
                   <i className="fas fa-spinner fa-spin"></i> Adding Member...
                 </>
               ) : (
-                'Add Member'
+                "Add Member"
               )}
             </button>
           </div>

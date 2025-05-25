@@ -16,6 +16,7 @@ import BookingDetails from "./components/BookingDetails";
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import EditTransaction from './components/EditTransaction';
+import UserProfile from "./components/UserProfile"; // Import UserProfile
 
 import "../src/components/AppStyles.css"; // Import the centralized CSS file
 import "@fortawesome/fontawesome-free/css/all.min.css";
@@ -66,7 +67,14 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              
+              <Route
+                path="/admin/user/:userId"
+                element={
+                  <ProtectedRoute isAdminRoute={true}>
+                    <UserProfile />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="/booking-details/:transactionId"
                 element={

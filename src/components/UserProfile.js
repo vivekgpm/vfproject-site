@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useAuth } from "../contexts/AuthContext";
+import { useParams, Link } from "react-router-dom";
 import { db } from "../firebase";
 import {
   doc,
@@ -9,22 +9,24 @@ import {
   where,
   getDocs,
 } from "firebase/firestore";
-import "../components/AppStyles.css";
+import "./AppStyles.css";
 
-const Profile = () => {
-  const { user } = useAuth();  const [userDetails, setUserDetails] = useState(null);
+const UserProfile = () => {
+  const { userId } = useParams();
+  const [userDetails, setUserDetails] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lifetimeEarnings, setLifetimeEarnings] = useState(0);
   const [paidAmount, setPaidAmount] = useState(0);
+
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        if (!user) return;
+        if (!userId) return;
 
-        // Fetch user details first
-        const userDocRef = doc(db, "users", user.uid);
+        // Fetch user details
+        const userDocRef = doc(db, "users", userId);
         const userDoc = await getDoc(userDocRef);
 
         if (!userDoc.exists()) {
@@ -36,12 +38,9 @@ const Profile = () => {
         const userData = userDoc.data();
         setUserDetails(userData);
 
-        // Only fetch transactions after we have user data
+        // Fetch transactions
         const transactionsRef = collection(db, "transactions");
-        const q = query(
-          transactionsRef,
-          where("userId", "==", userData.bdaId) // Use bdaId from user data
-        );
+        const q = query(transactionsRef, where("userId", "==", userData.bdaId));
         const querySnapshot = await getDocs(q);
 
         const transactionsList = querySnapshot.docs.map((doc) => ({
@@ -49,16 +48,19 @@ const Profile = () => {
           ...doc.data(),
         }));
 
-        setTransactions(transactionsList);        // Calculate lifetime earnings and paid amount
+        setTransactions(transactionsList);
+
+        // Calculate totals
         const totalEarnings = transactionsList.reduce((sum, transaction) => {
           return sum + (transaction.amount || 0);
         }, 0);
-        
-        // Calculate paid amount (sum of transactions with payment date)
+
         const paidAmount = transactionsList.reduce((sum, transaction) => {
-          return transaction.paymentDate ? sum + (transaction.amount || 0) : sum;
+          return transaction.paymentDate
+            ? sum + (transaction.amount || 0)
+            : sum;
         }, 0);
-        
+
         setLifetimeEarnings(totalEarnings);
         setPaidAmount(paidAmount);
       } catch (err) {
@@ -70,7 +72,7 @@ const Profile = () => {
     };
 
     fetchUserData();
-  }, [user]);
+  }, [userId]);
 
   if (loading) {
     return <div className="loading">Loading...</div>;
@@ -84,16 +86,19 @@ const Profile = () => {
     <div className="profile-container">
       <div className="profile-header">
         <div className="profile-title">
-          <h1>Investment Statement</h1>
+          <h1>Member Profile</h1>
           <p className="statement-date">
             As of {new Date().toLocaleDateString()}
           </p>
         </div>
-      
       </div>
-
+      <div className="link-align">
+        <Link to="/admin/newmember" className="back-button">
+          ← Back to Members List
+        </Link>
+      </div>
       <div className="investment-highlights">
-          <div className="user-info-card">
+        <div className="user-info-card">
           <div className="user-info-header">
             <h3>Account Information</h3>
           </div>
@@ -116,7 +121,7 @@ const Profile = () => {
                 {userDetails?.phone || "Not set"}
               </span>
             </div>
-               <div className="info-row">
+            <div className="info-row">
               <span className="info-label">ID:</span>
               <span className="info-value">
                 {userDetails?.bdaId || "Not set"}
@@ -126,13 +131,11 @@ const Profile = () => {
         </div>
         <div className="highlight-card investment-plan">
           <div className="highlight-header">
-            <h3>Investmented Amount</h3>
+            <h3>Invested Amount</h3>
           </div>
           <div className="highlight-content">
             <span className="highlight-value">
-              {userDetails?.investmentPlan
-                ? `${userDetails.investmentPlan}`
-                : `${userDetails.planAmount.toLocaleString('en-IN') || "Not set"}`}
+              ₹{userDetails?.planAmount?.toLocaleString("en-IN") || "0"}
             </span>
           </div>
         </div>
@@ -142,16 +145,17 @@ const Profile = () => {
           </div>
           <div className="highlight-content">
             <span className="highlight-value">
-              ₹{lifetimeEarnings.toLocaleString('en-IN')}
+              ₹{lifetimeEarnings.toLocaleString("en-IN")}
             </span>
           </div>
-        </div>        <div className="highlight-card lifetime-earnings">
+        </div>
+        <div className="highlight-card lifetime-earnings">
           <div className="highlight-header">
             <h3>Paid Amount</h3>
           </div>
           <div className="highlight-content">
             <span className="highlight-value">
-              ₹{paidAmount.toLocaleString('en-IN')}
+              ₹{paidAmount.toLocaleString("en-IN")}
             </span>
           </div>
         </div>
@@ -168,7 +172,7 @@ const Profile = () => {
                   <th>Type</th>
                   <th>Amount</th>
                   <th>Payment Date</th>
-                   <th>Remarks</th>
+                  <th>Remarks</th>
                 </tr>
               </thead>
               <tbody>
@@ -178,9 +182,9 @@ const Profile = () => {
                       {transaction.createdAt?.toDate().toLocaleDateString()}
                     </td>
                     <td>{transaction.type}</td>
-                    <td>₹{transaction.amount?.toLocaleString()}</td>
-                    <td>{transaction.paymentDate}</td>
-                     <td>{transaction.remarks}</td>
+                    <td>₹{transaction.amount?.toLocaleString("en-IN")}</td>
+                    <td>{transaction.paymentDate || "-"}</td>
+                    <td>{transaction.remarks || "-"}</td>
                   </tr>
                 ))}
               </tbody>
@@ -194,4 +198,4 @@ const Profile = () => {
   );
 };
 
-export default Profile;
+export default UserProfile;

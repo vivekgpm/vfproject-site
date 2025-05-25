@@ -1,9 +1,6 @@
 // React Component for Admin User Management
 import { Link } from "react-router-dom";
-import {
-  FaSearch,
-  FaArrowLeft,
-} from "react-icons/fa";
+import { FaSearch, FaArrowLeft } from "react-icons/fa";
 import { useState, useEffect, useCallback } from "react";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import {
@@ -13,7 +10,7 @@ import {
   getDocs,
   collection,
   query,
-  where
+  where,
 } from "firebase/firestore";
 
 import "../components/AppStyles.css"; // Import your CSS styles
@@ -39,10 +36,7 @@ function AdminUserManagement() {
   const fetchUsers = useCallback(async () => {
     try {
       const usersRef = collection(db, "users");
-      const q = query(
-        usersRef,
-        where("role", "==", "user")       
-      );
+      const q = query(usersRef, where("role", "==", "user"));
       const querySnapshot = await getDocs(q);
       const usersList = querySnapshot.docs.map((doc) => ({
         uid: doc.id,
@@ -187,11 +181,11 @@ function AdminUserManagement() {
               <thead>
                 <tr>
                   {[
-                    ["displayName", "Name"],                   
+                    ["displayName", "Name"],
                     ["bdaId", "BDA ID"],
                     ["phone", "Phone"],
                     ["investmentPlan", "Investment Plan"],
-                                      
+
                     ["createdAt", "Created On"],
                   ].map(([field, label]) => (
                     <th
@@ -203,20 +197,7 @@ function AdminUserManagement() {
                     </th>
                   ))}
                 </tr>
-              </thead>
-              <tbody>
-                {paginatedUsers.map((user) => (
-                  <tr key={user.uid}>
-                    <td>{user.displayName}</td>                   
-                    <td>{user.bdaId}</td>
-                    <td>{user.phone}</td>
-                    <td>{user.investmentPlan}</td>
-                  
-                   
-                    <td>{formatDate(user.createdAt) || "N/A"}</td>
-                  </tr>
-                ))}
-              </tbody>
+              </thead>              <tbody>{paginatedUsers.map((user) => (<tr key={user.uid}><td><Link to={`/admin/user/${user.uid}`} className="user-link">{user.displayName}</Link></td><td>{user.bdaId}</td><td>{user.phone}</td><td>₹{(user.planAmount || 0).toLocaleString('en-IN')}</td><td>{formatDate(user.createdAt) || "N/A"}</td></tr>))}</tbody>
             </table>
           </div>
 

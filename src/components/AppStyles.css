@@ -540,6 +540,7 @@ body {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
+  margin-top: 1rem;
 }
 
 .add-member-container .btn-secondary {
@@ -2559,6 +2560,18 @@ body {
   background: #e0a800;
 }
 
+/* User link in admin table */
+.user-link {
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.user-link:hover {
+  text-decoration: underline;
+  color: #1d4ed8;
+}
+
 /* User Search Select Styles */
 .search-select-container {
   position: relative;
@@ -2754,8 +2767,7 @@ body {
 .users-table th:nth-child(7) {
   width: 16%;
 } /* Created At */
-.profile-title
-{
+.profile-title {
   margin-top: 20px;
 }
 
@@ -2859,11 +2871,25 @@ body {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideUp {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.link-align {
+  text-align: right;
 }

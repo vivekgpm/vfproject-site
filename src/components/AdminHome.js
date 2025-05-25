@@ -7,6 +7,7 @@ import "../components/AppStyles.css"; // Import the centralized CSS file
 
 const AdminHome = () => {
   const [transactions, setTransactions] = useState([]);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -17,25 +18,38 @@ const AdminHome = () => {
   const pageSize = 20;
 
   useEffect(() => {
-    const fetchTransactions = async () => {
+    const fetchData = async () => {
       try {
+        // Fetch transactions
         const transactionsRef = collection(db, "transactions");
-        const q = query(transactionsRef, orderBy("createdAt", "desc"));
-        const snapshot = await getDocs(q);
-        const transactionsData = snapshot.docs.map((doc) => ({
+        const transactionQuery = query(
+          transactionsRef,
+          orderBy("createdAt", "desc")
+        );
+        const transactionSnapshot = await getDocs(transactionQuery);
+        const transactionsData = transactionSnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
         setTransactions(transactionsData);
         setFilteredTransactions(transactionsData);
+
+        // Fetch users for investment calculations
+        const usersRef = collection(db, "users");
+        const usersSnapshot = await getDocs(usersRef);
+        const usersData = usersSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setUsers(usersData);
       } catch (error) {
-        console.error("Error fetching transactions:", error);
+        console.error("Error fetching data:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchTransactions();
+    fetchData();
   }, []);
 
   useEffect(() => {
@@ -67,7 +81,7 @@ const AdminHome = () => {
       yesterday.setHours(0, 0, 0, 0);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      
+
       filtered = filtered.filter((t) => {
         const transactionDate = t.createdAt?.toDate();
         return transactionDate >= yesterday && transactionDate < today;
@@ -76,12 +90,14 @@ const AdminHome = () => {
 
     setFilteredTransactions(filtered);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [searchTerm, startDate, endDate, transactions, showLastDayOnly]);
-
-  // Calculations
+  }, [searchTerm, startDate, endDate, transactions, showLastDayOnly]); // Calculations
   const totalTransactions = filteredTransactions.length;
+  const totalInvestments = users.reduce(
+    (sum, user) => sum + (user.planAmount || 0),
+    0
+  );
   const totalIncentives = filteredTransactions.reduce(
-    (sum, t) => sum + (t.pricing?.discount || 0),
+    (sum, t) => sum + (t.amount || 0),
     0
   );
 
@@ -93,19 +109,34 @@ const AdminHome = () => {
   );
 
   if (loading) return <div>Loading...</div>;
-
+  const formatDate = (timestamp) => {
+    if (!timestamp) return "N/A";
+    // Check if it's a Firestore Timestamp
+    if (timestamp.toDate) {
+      return timestamp.toDate().toLocaleString();
+    }
+    // Check if it's a regular timestamp
+    if (timestamp.seconds) {
+      return new Date(timestamp.seconds * 1000).toLocaleString();
+    }
+    // If it's already a Date object or string
+    return new Date(timestamp).toLocaleString();
+  };
   return (
     <div className="admin-home">
       <h2>Admin Dashboard</h2>
-      
+
       <div className="admin-stats">
         <div className="stat-card">
           <h3>Total Transactions</h3>
           <p>{totalTransactions}</p>
+        </div>{" "}        <div className="stat-card">
+          <h3>Total Investments</h3>
+          <p>₹{totalInvestments.toLocaleString('en-IN')}</p>
         </div>
         <div className="stat-card">
           <h3>Total Incentives</h3>
-          <p>₹{totalIncentives.toLocaleString()}</p>
+          <p>₹{totalIncentives.toLocaleString('en-IN')}</p>
         </div>
       </div>
 
@@ -150,7 +181,7 @@ const AdminHome = () => {
           Manage Members
         </Link>
       </div>
-      
+
       <h3>Recent Transactions</h3>
       <div className="table-responsive">
         <table className="transactions-table">
@@ -168,27 +199,33 @@ const AdminHome = () => {
           <tbody>
             {paginatedTransactions.map((transaction) => (
               <tr key={transaction.id}>
-                <td>{new Date(transaction.createdAt?.toDate()).toLocaleDateString()}</td>
-                <td>{transaction.displayName || 'N/A'}</td>
-                <td>{transaction.type || 'N/A'}</td>
-                <td>₹{transaction.amount || '0'}</td>
-                <td>{transaction.paymentDate ? new Date(transaction.paymentDate).toLocaleDateString() : '-'}</td>
+                <td>{formatDate(transaction.createdAt)}</td>
+                <td>{transaction.userId || "N/A"}</td>
+                <td>{transaction.type || "N/A"}</td>
+                <td>₹{transaction.amount.toLocaleString('en-IN') || "0"}</td>
                 <td>
-                  <span className={`status-badge ${transaction.status?.toLowerCase()}`}>
-                    {transaction.status || 'Pending'}
+                  {transaction.paymentDate
+                    ? new Date(transaction.paymentDate).toLocaleDateString()
+                    : "-"}
+                </td>
+                <td>
+                  <span
+                    className={`status-badge ${transaction.status?.toLowerCase()}`}
+                  >
+                    {transaction.status || "Pending"}
                   </span>
                 </td>
                 <td>
-                  <Link 
+                  <Link
                     to={`/booking-details/${transaction.id}`}
                     className="btn btn-info btn-sm"
                   >
                     View Details
                   </Link>
-                  <Link 
+                  <Link
                     to={`/edit-transaction/${transaction.id}`}
                     className="btn btn-warning btn-sm"
-                    style={{ marginLeft: '8px' }}
+                    style={{ marginLeft: "8px" }}
                   >
                     Edit
                   </Link>
@@ -204,7 +241,7 @@ const AdminHome = () => {
         <div className="pagination">
           <button
             className="pagination-button"
-            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
             disabled={currentPage === 1}
           >
             Previous
@@ -214,7 +251,9 @@ const AdminHome = () => {
           </span>
           <button
             className="pagination-button"
-            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            onClick={() =>
+              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+            }
             disabled={currentPage === totalPages}
           >
             Next

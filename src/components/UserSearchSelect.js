@@ -94,7 +94,7 @@ const UserSearchSelect = ({ onUserSelect }) => {
               >
                 <div className="user-suggestion">
                   <span className="user-name">{user.displayName}</span>
-                  <span className="user-email">{user.email}</span>
+                  <span className="user-email">{user.bdaId}</span>
                 </div>
               </li>
             ))}

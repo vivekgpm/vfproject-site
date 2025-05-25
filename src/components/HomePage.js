@@ -8,8 +8,8 @@ const HomePage = () => {
       {/* Hero Section */}
       <section className="hero-section">
         <div className="hero-content">
-          <h1>Your Future, Our Priority</h1>
-          <p>Premium plots in a strategically located, well-developed community</p>
+          <h1>Vachana Business Development Executive</h1>
+          <p>Your pathway to success</p>
           <Link to="/projects" className="cta-button">Explore Projects</Link>
         </div>
       </section>
