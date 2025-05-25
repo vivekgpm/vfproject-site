@@ -19,7 +19,7 @@ import UserSearchSelect from "./UserSearchSelect";
 import "../components/AppStyles.css";
 
 // Get API URL from environment variable or use default
-const EXP_API_URL = process.env.REACT_APP_API_URL_2 || "http://localhost:3001"; // Fallback to localhost if not set
+const EXP_API_URL = process.env.REACT_APP_API_URL_3 || "http://localhost:3001"; // Fallback to localhost if not set
 
 // Initialize Firebase services
 let db;
@@ -242,6 +242,7 @@ const AddMember = () => {
       // Make API call with proper authentication
       const response = await fetch(`${EXP_API_URL}/api/users`, {
         method: "POST",
+        credentials: "include", // Important for requests with cookies
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${idToken}`,
