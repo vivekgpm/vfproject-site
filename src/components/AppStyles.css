@@ -136,6 +136,35 @@ body {
   color: white;
 }
 
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.btn-sm {
+  padding: 4px 8px;
+  font-size: 0.875rem;
+}
+
+.btn-warning {
+  background-color: #f59e0b;
+  color: white;
+}
+
+.btn-danger {
+  background-color: #dc2626;
+  color: white;
+}
+
+.btn-warning:hover {
+  background-color: #d97706;
+}
+
+.btn-danger:hover {
+  background-color: #b91c1c;
+}
+
 /* Table Styles */
 .table-container {
   overflow-x: auto;

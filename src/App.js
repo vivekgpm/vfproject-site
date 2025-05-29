@@ -17,7 +17,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import EditTransaction from './components/EditTransaction';
 import UserProfile from "./components/UserProfile"; // Import UserProfile
-
+import EditProfile from "./components/EditProfile"; // Import EditProfile
 import "../src/components/AppStyles.css"; // Import the centralized CSS file
 import "@fortawesome/fontawesome-free/css/all.min.css";
 
@@ -72,6 +72,14 @@ function App() {
                 element={
                   <ProtectedRoute isAdminRoute={true}>
                     <UserProfile />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/edit-profile/:userId"
+                element={
+                  <ProtectedRoute isAdminRoute={true}>
+                    <EditProfile />
                   </ProtectedRoute>
                 }
               />

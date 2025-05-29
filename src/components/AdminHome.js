@@ -87,10 +87,11 @@ const AdminHome = () => {
         return transactionDate >= yesterday && transactionDate < today;
       });
     }
-
     setFilteredTransactions(filtered);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [searchTerm, startDate, endDate, transactions, showLastDayOnly]); // Calculations
+  }, [searchTerm, startDate, endDate, transactions, showLastDayOnly]);
+
+  // Calculations
   const totalTransactions = filteredTransactions.length;
   const totalInvestments = users.reduce(
     (sum, user) => sum + (user.planAmount || 0),
@@ -98,6 +99,10 @@ const AdminHome = () => {
   );
   const totalIncentives = filteredTransactions.reduce(
     (sum, t) => sum + (t.amount || 0),
+    0
+  );
+  const totalPaid = filteredTransactions.reduce(
+    (sum, t) => (t.paymentDate ? sum + (t.amount || 0) : sum),
     0
   );
 
@@ -127,16 +132,22 @@ const AdminHome = () => {
       <h2>Admin Dashboard</h2>
 
       <div className="admin-stats">
+        {" "}
         <div className="stat-card">
           <h3>Total Transactions</h3>
           <p>{totalTransactions}</p>
-        </div>{" "}        <div className="stat-card">
+        </div>
+        <div className="stat-card">
           <h3>Total Investments</h3>
-          <p>₹{totalInvestments.toLocaleString('en-IN')}</p>
+          <p>₹{totalInvestments.toLocaleString("en-IN")}</p>
         </div>
         <div className="stat-card">
           <h3>Total Incentives</h3>
-          <p>₹{totalIncentives.toLocaleString('en-IN')}</p>
+          <p>₹{totalIncentives.toLocaleString("en-IN")}</p>
+        </div>
+        <div className="stat-card">
+          <h3>Total Paid</h3>
+          <p>₹{totalPaid.toLocaleString("en-IN")}</p>
         </div>
       </div>
 
@@ -184,7 +195,7 @@ const AdminHome = () => {
 
       <h3>Recent Transactions</h3>
       <div className="table-responsive">
-        <table className="transactions-table">
+        <table className="transactions-table">          
           <thead>
             <tr>
               <th>Transaction Date</th>
@@ -202,7 +213,7 @@ const AdminHome = () => {
                 <td>{formatDate(transaction.createdAt)}</td>
                 <td>{transaction.userId || "N/A"}</td>
                 <td>{transaction.type || "N/A"}</td>
-                <td>₹{transaction.amount.toLocaleString('en-IN') || "0"}</td>
+                <td>₹{transaction.amount.toLocaleString("en-IN") || "0"}</td>
                 <td>
                   {transaction.paymentDate
                     ? new Date(transaction.paymentDate).toLocaleDateString()

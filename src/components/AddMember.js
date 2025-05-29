@@ -104,7 +104,7 @@ const AddMember = () => {
     referralId: "",
     role: "user",
     password: "Complex123!", // Default password
-    paymentMode: "Cash", // Default payment mode
+    paymentMode: "Online", // Default payment mode
     remarks: "", // New field for remarks
   });
   const [errorMessage, setErrorMessage] = useState("");
@@ -443,9 +443,9 @@ const AddMember = () => {
                   onChange={handleInputChange}
                   required
                 >
-                  <option value="Cash">Cash</option>
+                  <option value="Online">Online</option>
                   <option value="NEFT/RTGS">NEFT/RTGS</option>
-                  <option value="UPI">UPI</option>
+                  <option value="UPI">Net Banking</option>
                   <option value="Cheque">Cheque</option>
                 </select>
               </div>

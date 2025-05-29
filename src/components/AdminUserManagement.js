@@ -11,6 +11,7 @@ import {
   collection,
   query,
   where,
+  deleteDoc,
 } from "firebase/firestore";
 
 import "../components/AppStyles.css"; // Import your CSS styles
@@ -79,6 +80,20 @@ function AdminUserManagement() {
   // Handle input changes
 
   // Handle form submission to create a new user
+
+  const handleDeleteUser = async (userId) => {
+    if (window.confirm("Are you sure you want to delete this user?")) {
+      try {
+        // Delete user from Firestore
+        await deleteDoc(doc(db, "users", userId));
+        // Refresh the users list
+        fetchUsers();
+      } catch (error) {
+        console.error("Error deleting user:", error);
+        setErrorMessage("Failed to delete user. Please try again.");
+      }
+    }
+  };
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -179,25 +194,41 @@ function AdminUserManagement() {
           <div className="users-table">
             <table>
               <thead>
-                <tr>
-                  {[
+                <tr>                  {[
                     ["displayName", "Name"],
                     ["bdaId", "BDA ID"],
                     ["phone", "Phone"],
                     ["investmentPlan", "Investment Plan"],
-
                     ["createdAt", "Created On"],
+                    ["actions", "Actions"]
                   ].map(([field, label]) => (
                     <th
                       key={field}
-                      onClick={() => handleSort(field)}
+                      onClick={() => field !== "actions" ? handleSort(field) : null}
                       className={sortField === field ? sortDirection : ""}
                     >
                       {label}
                     </th>
                   ))}
                 </tr>
-              </thead>              <tbody>{paginatedUsers.map((user) => (<tr key={user.uid}><td><Link to={`/admin/user/${user.uid}`} className="user-link">{user.displayName}</Link></td><td>{user.bdaId}</td><td>{user.phone}</td><td>₹{(user.planAmount || 0).toLocaleString('en-IN')}</td><td>{formatDate(user.createdAt) || "N/A"}</td></tr>))}</tbody>
+              </thead>
+              <tbody>
+                {paginatedUsers.map((user) => (
+                  <tr key={user.uid}>
+                    <td><Link to={`/admin/user/${user.uid}`} className="user-link">{user.displayName}</Link></td>
+                    <td>{user.bdaId}</td>
+                    <td>{user.phone}</td>
+                    <td>₹{(user.planAmount || 0).toLocaleString('en-IN')}</td>
+                    <td>{formatDate(user.createdAt) || "N/A"}</td>
+                    <td>
+                      <div className="action-buttons">
+                        <Link to={`/admin/edit-profile/${user.uid}`} className="btn btn-warning btn-sm">Edit</Link>
+                        <button onClick={() => handleDeleteUser(user.uid)} className="btn btn-danger btn-sm">Delete</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
             </table>
           </div>
 
