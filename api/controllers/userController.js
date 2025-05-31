@@ -66,6 +66,14 @@ exports.createNewUser = async (req, res) => {
       country,
       paymentMode,
       remarks,
+      bankName,
+      branchName,
+      accountNo,
+      ifscCode,
+      nomineeName,
+      nomineeRelation,
+      panCard,
+      aadharCard,
     } = req.body;
 
     const missingFields = [];
@@ -147,6 +155,14 @@ exports.createNewUser = async (req, res) => {
       country,
       paymentMode,
       remarks,
+      bankName,
+      branchName,
+      accountNo,
+      ifscCode,
+      nomineeName,
+      nomineeRelation,
+      panCard,
+      aadharCard,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       createdBy: requestorUid,
     };

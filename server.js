@@ -3,6 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const admin = require('firebase-admin');
 const userRoutes = require('./api/users');
+const testRoutes = require('./api/routes/test');
+const errorHandler = require('./api/middleware/errorHandler');
 
 const app = express();
 
@@ -41,32 +43,60 @@ if (hasFirebaseConfig) {
     console.log('Firebase configuration not found, running in test mode');
 }
 
-// Middleware
+// Middleware setup
 app.use(cors({
-    origin: true, // Allow all origins in development
+    origin: true,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Error handling for JSON parsing
-app.use((err, req, res, next) => {
-    if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
-        console.error('JSON Parse Error:', err);
-        return res.status(400).json({ 
-            error: 'Invalid JSON in request body',
-            details: err.message
-        });
-    }
-    next();
-});
-
-// Debug middleware to log all requests
+// Request logging middleware
 app.use((req, res, next) => {
-    console.log(`${req.method} ${req.url}`);
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
     next();
 });
+
+// Debug middleware
+app.use((req, res, next) => {
+    console.log('📨 Incoming request:', {
+        method: req.method,
+        url: req.url,
+        path: req.path
+    });
+    next();
+});
+
+// Basic test routes
+app.get('/', (req, res) => {
+    console.log('🏠 Root endpoint hit');
+    res.json({ 
+        message: 'API is running',
+        endpoints: {
+            test: [
+                { method: 'GET', path: '/api/hello', description: 'Get hello world message' },
+                { method: 'GET', path: '/api/hello/:name', description: 'Get personalized hello message' }
+            ],
+            users: [
+                { method: 'GET', path: '/api/users', description: 'List all users (admin only)' },
+                { method: 'POST', path: '/api/users', description: 'Create new user (admin only)' },
+                { method: 'GET', path: '/api/users/:userId', description: 'Get user by ID' },
+                { method: 'PUT', path: '/api/users/:userId', description: 'Update user' },
+                { method: 'DELETE', path: '/api/users/:userId', description: 'Delete user (admin only)' }
+            ],
+            plans: [
+                { method: 'GET', path: '/api/plans', description: 'Get investment plans (admin only)' }
+            ]
+        }
+    });
+});
+
+// Routes
+app.use('/api', testRoutes);    // Test routes first
+app.use('/api', userRoutes);    // User routes
 
 // Admin token generation endpoint
 app.post('/api/admin-token', async (req, res) => {
@@ -98,35 +128,10 @@ app.post('/api/admin-token', async (req, res) => {
     }
 });
 
-// Routes will be handled by userRoutes
+// Error handling middleware (should be last)
+app.use(errorHandler);
 
-// Test API endpoints first
-app.get('/api/hello', (req, res) => {
-    console.log('Hello endpoint hit');
-    res.json({ message: 'Hello, World!' });
-});
-
-app.get('/api/hello/:name', (req, res) => {
-    const name = req.params.name;
-    console.log(`Hello ${name} endpoint hit`);
-    res.json({ message: `Hello, ${name}!` });
-});
-
-// Basic route for testing
-app.get('/', (req, res) => {
-    console.log('Root endpoint hit');
-    res.json({ 
-        message: 'API is running',
-        endpoints: [
-            { path: '/api/hello', description: 'Get hello world message' },
-            { path: '/api/hello/:name', description: 'Get personalized hello message' }
-        ]
-    });
-});
-
-// Routes
-app.use('/api', userRoutes);
-
+// Error handlers
 // Global error handler
 app.use((err, req, res, next) => {
     console.error('Error details:', {
@@ -162,5 +167,10 @@ app.use((err, req, res, next) => {
 // Start server
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    console.log('\n🚀 Server is running!');
+    console.log(`📡 API URL: http://localhost:${PORT}`);
+    console.log('👋 Try these test endpoints:');
+    console.log(`   GET http://localhost:${PORT}/api/hello`);
+    console.log(`   GET http://localhost:${PORT}/api/hello/YourName`);
+    console.log('\nPress Ctrl+C to stop the server\n');
 });
