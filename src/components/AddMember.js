@@ -17,6 +17,7 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getAllPlans } from "../api/planApi";
 import UserSearchSelect from "./UserSearchSelect";
 import "../components/AppStyles.css";
+import { indianStates, countries } from "../utils/constants";
 
 // Get API URL from environment variable or use default
 const EXP_API_URL = process.env.REACT_APP_API_URL_3 || "http://localhost:3001"; // Fallback to localhost if not set
@@ -31,65 +32,6 @@ try {
 } catch (error) {
   console.error("Error initializing Firebase:", error);
 }
-
-// List of Indian states
-const indianStates = [
-  "Andhra Pradesh",
-  "Arunachal Pradesh",
-  "Assam",
-  "Bihar",
-  "Chhattisgarh",
-  "Goa",
-  "Gujarat",
-  "Haryana",
-  "Himachal Pradesh",
-  "Jharkhand",
-  "Karnataka",
-  "Kerala",
-  "Madhya Pradesh",
-  "Maharashtra",
-  "Manipur",
-  "Meghalaya",
-  "Mizoram",
-  "Nagaland",
-  "Odisha",
-  "Punjab",
-  "Rajasthan",
-  "Sikkim",
-  "Tamil Nadu",
-  "Telangana",
-  "Tripura",
-  "Uttar Pradesh",
-  "Uttarakhand",
-  "West Bengal",
-];
-
-// List of countries (partial list - add more as needed)
-const countries = [
-  "India",
-  "Afghanistan",
-  "Australia",
-  "Bangladesh",
-  "Bhutan",
-  "Canada",
-  "China",
-  "France",
-  "Germany",
-  "Indonesia",
-  "Japan",
-  "Malaysia",
-  "Maldives",
-  "Nepal",
-  "New Zealand",
-  "Pakistan",
-  "Russia",
-  "Singapore",
-  "Sri Lanka",
-  "Thailand",
-  "United Arab Emirates",
-  "United Kingdom",
-  "United States",
-];
 
 const AddMember = () => {
   const [formData, setFormData] = useState({
@@ -106,6 +48,16 @@ const AddMember = () => {
     password: "Complex123!", // Default password
     paymentMode: "Online", // Default payment mode
     remarks: "", // New field for remarks
+    // Nominee details
+    nomineeName: "",
+    nomineeRelation: "Spouse",
+    panCard: "",
+    aadharCard: "",
+    // Bank details
+    accountNo: "",
+    bankName: "",
+    ifscCode: "",
+    branchName: "",
   });
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -262,6 +214,14 @@ const AddMember = () => {
           referralId: formData.referralId || null,
           paymentMode: formData.paymentMode,
           remarks: formData.remarks,
+          nomineeName: formData.nomineeName,
+          nomineeRelation: formData.nomineeRelation,
+          bankName : formData.bankName,
+          accountNo: formData.accountNo,
+          ifscCode: formData.ifscCode,  
+          branchName: formData.branchName,
+          panCard: formData.panCard,
+          aadharCard: formData.aadharCard,          
           userData: {
             ...formData,
             bdaId,
@@ -390,24 +350,25 @@ const AddMember = () => {
         <div className="success-popup">
           <div className="success-popup-content">
             <i className="fas fa-check-circle"></i>
-            <h3>Success!</h3>
-            <p>Member has been added successfully.</p>
+            <div>
+              <h3>Success!</h3>
+              <p>Member has been added successfully.</p>
+            </div>
           </div>
         </div>
       )}
 
       <div className="form-container">
         {errorMessage && <div className="error-message">{errorMessage}</div>}
-        {successMessage && (
-          <div className="success-message">{successMessage}</div>
-        )}
+        {successMessage && <div className="success-message">{successMessage}</div>}
 
         <form onSubmit={handleCreateUser} className="create-user-form">
-          <div className="form-grid">
-            {/* Column 1 */}
-            <div className="form-column">
+          {/* Personal Information Section */}
+          <div className="form-section">
+            <h3 className="section-title">Personal Information</h3>
+            <div className="form-row">
               <div className="form-group">
-                <label htmlFor="displayName">Name:</label>
+                <label htmlFor="displayName">Full Name:</label>
                 <input
                   type="text"
                   id="displayName"
@@ -415,9 +376,54 @@ const AddMember = () => {
                   value={formData.displayName}
                   onChange={handleInputChange}
                   required
+                  placeholder="Enter full name"
                 />
               </div>
+              <div className="form-group">
+                <label htmlFor="phone">Phone Number:</label>
+                <input
+                  type="tel"
+                  id="phone"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handlePhoneChange}
+                  required
+                  maxLength="10"
+                  pattern="[0-9]{10}"
+                  title="Please enter a valid 10-digit phone number"
+                  placeholder="10-digit mobile number"
+                />
+              </div>
+            </div>
 
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="email">Email Address:</label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="Enter email address"
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="city">City:</label>
+                <input
+                  type="text"
+                  id="city"
+                  name="city"
+                  value={formData.city}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="Enter city name"
+                />
+              </div>
+            </div>
+
+            <div className="form-row">
               <div className="form-group">
                 <label htmlFor="state">State:</label>
                 <select
@@ -435,39 +441,6 @@ const AddMember = () => {
                 </select>
               </div>
               <div className="form-group">
-                <label htmlFor="paymentMode">Payment Mode:</label>
-                <select
-                  id="paymentMode"
-                  name="paymentMode"
-                  value={formData.paymentMode}
-                  onChange={handleInputChange}
-                  required
-                >
-                  <option value="Online">Online</option>
-                  <option value="NEFT/RTGS">NEFT/RTGS</option>
-                  <option value="UPI">Net Banking</option>
-                  <option value="Cheque">Cheque</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Column 2 */}
-            <div className="form-column">
-              <div className="form-group">
-                <label htmlFor="phone">Phone:</label>
-                <input
-                  type="tel"
-                  id="phone"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handlePhoneChange}
-                  required
-                  maxLength="10"
-                  pattern="[0-9]{10}"
-                  title="Please enter a valid 10-digit phone number"
-                />
-              </div>
-              <div className="form-group">
                 <label htmlFor="country">Country:</label>
                 <select
                   id="country"
@@ -483,59 +456,28 @@ const AddMember = () => {
                   ))}
                 </select>
               </div>
-
-              <div className="form-group">
-                <label htmlFor="remarks">Remarks:</label>
-                <textarea
-                  id="remarks"
-                  name="remarks"
-                  value={formData.remarks}
-                  onChange={handleInputChange}
-                  rows="2"
-                  style={{ resize: "vertical" }}
-                />
-              </div>
             </div>
 
-            {/* Column 3 */}
-            <div className="form-column">
+            <div className="form-row full-width">
               <div className="form-group">
-                <label htmlFor="email">Email:</label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="address">Address:</label>
+                <label htmlFor="address">Complete Address:</label>
                 <textarea
                   id="address"
                   name="address"
                   value={formData.address}
                   onChange={handleInputChange}
                   required
+                  placeholder="Enter complete address"
+                  rows="3"
                 />
               </div>
             </div>
+          </div>
 
-            {/* Column 4 */}
-            <div className="form-column">
-              <div className="form-group">
-                <label htmlFor="city">City:</label>
-                <input
-                  type="text"
-                  id="city"
-                  name="city"
-                  value={formData.city}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
+          {/* Investment Details Section */}
+          <div className="form-section">
+            <h3 className="section-title">Investment Details</h3>
+            <div className="form-row">
               <div className="form-group">
                 <label htmlFor="investmentPlan">Investment Plan:</label>
                 <select
@@ -553,26 +495,165 @@ const AddMember = () => {
                   ))}
                 </select>
               </div>
+              <div className="form-group">
+                <label htmlFor="paymentMode">Payment Mode:</label>
+                <select
+                  id="paymentMode"
+                  name="paymentMode"
+                  value={formData.paymentMode}
+                  onChange={handleInputChange}
+                  required
+                >
+                  <option value="Online">Online</option>
+                  <option value="NEFT/RTGS">NEFT/RTGS</option>
+                  <option value="UPI">UPI</option>
+                  <option value="Cheque">Cheque</option>
+                </select>
+              </div>
+            </div>
 
+            <div className="form-row">
               <div className="form-group">
                 <label>Referral ID:</label>
                 <UserSearchSelect onUserSelect={handleReferralSelect} />
               </div>
-
-              <div className="form-group" style={{ display: "none" }}>
-                <label htmlFor="role">Role:</label>
-                <select
-                  id="role"
-                  name="role"
-                  value={formData.role}
+              <div className="form-group">
+                <label htmlFor="remarks">Additional Remarks:</label>
+                <textarea
+                  id="remarks"
+                  name="remarks"
+                  value={formData.remarks}
                   onChange={handleInputChange}
-                  disabled
-                >
-                  <option value="user">User</option>
-                </select>
+                  rows="2"
+                  placeholder="Additional notes or remarks"
+                />
               </div>
             </div>
           </div>
+
+          {/* Nominee Section */}
+          <div className="form-section nominee-section">
+            <h3 className="section-title">Nominee Details</h3>
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="nomineeName">Nominee Name:</label>
+                <input
+                  type="text"
+                  id="nomineeName"
+                  name="nomineeName"
+                  value={formData.nomineeName}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="Enter nominee's name"
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="nomineeRelation">Relationship:</label>
+                <select
+                  id="nomineeRelation"
+                  name="nomineeRelation"
+                  value={formData.nomineeRelation}
+                  onChange={handleInputChange}
+                  required
+                >
+                  <option value="Spouse">Spouse</option>
+                  <option value="Child">Child</option>
+                  <option value="Parent">Parent</option>
+                  <option value="Sibling">Sibling</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="panCard">PAN Card Number:</label>
+                <input
+                  type="text"
+                  id="panCard"
+                  name="panCard"
+                  value={formData.panCard}
+                  onChange={handleInputChange}
+                  pattern="[A-Z]{5}[0-9]{4}[A-Z]{1}"
+                  title="Enter valid PAN card number (e.g., ABCDE1234F)"
+                  required
+                  placeholder="ABCDE1234F"
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="aadharCard">Aadhar Card Number:</label>
+                <input
+                  type="text"
+                  id="aadharCard"
+                  name="aadharCard"
+                  value={formData.aadharCard}
+                  onChange={handleInputChange}
+                  pattern="[0-9]{12}"
+                  title="Enter valid 12-digit Aadhar number"
+                  required
+                  placeholder="123456789012"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Bank Details Section */}
+          <div className="form-section bank-section">
+            <h3 className="section-title">Bank Details</h3>
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="accountNo">Account Number:</label>
+                <input
+                  type="text"
+                  id="accountNo"
+                  name="accountNo"
+                  value={formData.accountNo}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="Enter account number"
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="bankName">Bank Name:</label>
+                <input
+                  type="text"
+                  id="bankName"
+                  name="bankName"
+                  value={formData.bankName}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="Enter bank name"
+                />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="ifscCode">IFSC Code:</label>                <input
+                  type="text"
+                  id="ifscCode"
+                  name="ifscCode"
+                  value={formData.ifscCode}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="Enter IFSC code"
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="branchName">Branch Name:</label>
+                <input
+                  type="text"
+                  id="branchName"
+                  name="branchName"
+                  value={formData.branchName}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="Enter branch name"
+                />
+              </div>
+            </div>
+          </div>
+
           <div className="form-actions">
             <button
               type="submit"

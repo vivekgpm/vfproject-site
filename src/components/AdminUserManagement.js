@@ -11,7 +11,7 @@ import {
   collection,
   query,
   where,
-  deleteDoc,
+  
 } from "firebase/firestore";
 
 import "../components/AppStyles.css"; // Import your CSS styles
@@ -80,17 +80,30 @@ function AdminUserManagement() {
   // Handle input changes
 
   // Handle form submission to create a new user
-
   const handleDeleteUser = async (userId) => {
     if (window.confirm("Are you sure you want to delete this user?")) {
       try {
-        // Delete user from Firestore
-        await deleteDoc(doc(db, "users", userId));
-        // Refresh the users list
+        // Get fresh ID token for authentication
+        const idToken = await auth.currentUser.getIdToken(true);
+        
+        // Make API call to delete user
+        const response = await fetch(`${process.env.REACT_APP_API_URL_3}/api/users/${userId}`, {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+          },
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to delete user");
+        }
+
+        // Refresh the users list after successful deletion
         fetchUsers();
       } catch (error) {
         console.error("Error deleting user:", error);
-        setErrorMessage("Failed to delete user. Please try again.");
+        setErrorMessage(error.message || "Failed to delete user. Please try again.");
       }
     }
   };

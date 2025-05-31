@@ -2,17 +2,9 @@ import "../components/AppStyles.css";
 import { useState, useEffect } from "react";
 import { useLocation, useParams, Link, useNavigate } from "react-router-dom";
 import { createTransaction } from "../api/transactionApi";
-import { getUsersByRole } from "../api/userApi";
-import { getAllPlans } from "../api/planApi";
 import UserSearchSelect from "./UserSearchSelect";
 
 const BookAsset = () => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [users, setUsers] = useState([]);
-  const [filteredUsers, setFilteredUsers] = useState([]);
-  const [plans, setPlans] = useState([]);
-  const [selectedPlan, setSelectedPlan] = useState(null);
-
   // Format number in Indian numbering system
   const formatIndianPrice = (num) => {
     if (!num) return "0";
@@ -62,27 +54,7 @@ const BookAsset = () => {
       [name]: value,
     }));
   };
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const usersData = await getUsersByRole("user");
-        setUsers(usersData);
-      } catch (error) {
-        console.error("Error fetching users:", error);
-      }
-    };
 
-    fetchUsers();
-  }, []);
-
-  useEffect(() => {
-    const filtered = users.filter(
-      (user) =>
-        user.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    setFilteredUsers(filtered);
-  }, [searchTerm, users]);
   useEffect(() => {
     if (projectData) {
       const isPerSqFtPricing = [
@@ -103,7 +75,7 @@ const BookAsset = () => {
 
       const discountPercent = parseFloat(projectData.discount || 0);
       const discountAmount = (totalPrice * discountPercent) / 100;
-      const finalPrice = totalPrice - discountAmount;
+      const finalPrice = totalPrice;
       const bookingAmount = finalPrice * 0.2; // 20% booking amount
 
       setPricing({
@@ -116,19 +88,6 @@ const BookAsset = () => {
       });
     }
   }, [projectData, assetType]);
-  useEffect(() => {
-    const fetchPlans = async () => {
-      try {
-        const plansData = await getAllPlans();
-        setPlans(plansData);
-      } catch (error) {
-        console.error("Error fetching plans:", error);
-      }
-    };
-
-    fetchPlans();
-  }, []);
-
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -168,7 +127,7 @@ const BookAsset = () => {
                   const totalPrice = newArea * pricePerSqFt;
                   const discountPercent = parseFloat(projectData.discount || 0);
                   const discountAmount = (totalPrice * discountPercent) / 100;
-                  const finalPrice = totalPrice - discountAmount;
+                  const finalPrice = totalPrice;
                   const bookingAmount = finalPrice * 0.2;
 
                   setPricing({
@@ -273,8 +232,7 @@ const BookAsset = () => {
           ...formData,
           area: projectData.area,
           location: projectData.location,
-        },
-        pricing: {
+        },        pricing: {
           ...pricing,
           totalPrice: pricing.totalPrice,
           discount: pricing.discount,
@@ -282,18 +240,19 @@ const BookAsset = () => {
           bookingAmount: pricing.bookingAmount,
           pricePerSqFt: pricing.pricePerSqFt,
           incentive: selectedUser?.earning || 0,
+          commissionAmount: (pricing.bookingAmount * (pricing.discountPercent || 0)) / 100,
         },
         status: "pending",
       };
 
       if (bookingType === "non-member") {
         transactionData.nonMemberDetails = nonMemberData;
-      }
-
-      const transactionId = await createTransaction(transactionData);
+      }      const transactionId = await createTransaction(transactionData);
+      alert("Booking successful! Redirecting to booking details...");
       navigate(`/booking-details/${transactionId}`);
     } catch (error) {
       console.error("Error creating transaction:", error);
+      alert("Error creating booking. Please try again.");
     }
   };
 
@@ -311,32 +270,21 @@ const BookAsset = () => {
     setSelectedUser(user);
     setFormData((prev) => ({
       ...prev,
-      referralId: user.displayName || "",
-    }));
-  };
-
-  const handlePlanChange = (e) => {
-    const planId = e.target.value;
-    const plan = plans.find(p => p.id === planId);
-    setSelectedPlan(plan);
-    setFormData(prev => ({
-      ...prev,
-      investmentPlan: plan?.name || "",
-      investmentAmount: plan?.amount || 0
+      referralId: user.bdaId || "",
     }));
   };
 
   return (
     <div className="book-asset-container">
       <div className="booking-header">
-        <Link 
-          to={`/projects/${projectId}`} 
+        <Link
+          to={`/projects/${projectId}`}
           className="back-button"
           state={{ project: projectData }}
           onClick={(e) => {
             if (!projectId) {
               e.preventDefault();
-              navigate('/projects');
+              navigate("/projects");
             }
           }}
         >
@@ -418,10 +366,6 @@ const BookAsset = () => {
               <span className="label">Type</span>
               <span className="value">{projectData.type}</span>
             </div>
-            <div className="info-item">
-              <span className="label">Area</span>
-              <span className="value">{projectData.area}</span>
-            </div>
             {renderAssetFields()}
             <div className="form-group">
               <label>Referral ID</label>
@@ -437,27 +381,9 @@ const BookAsset = () => {
           </div>
         </div>
 
-        <div className="form-group">
-          <label>Investment Plan</label>
-          <select
-            name="investmentPlan"
-            value={selectedPlan?.id || ""}
-            onChange={handlePlanChange}
-            required
-          >
-            <option value="">Select Investment Plan</option>
-            {plans.map((plan) => (
-              <option key={plan.id} value={plan.id}>
-                {plan.name} - ₹{formatIndianPrice(plan.amount)}
-              </option>
-            ))}
-          </select>
-        </div>
-
         <div className="pricing-details">
           <h3>Pricing Details</h3>
           <div className="price-grid">
-            {" "}
             {["Residential Plot", "Commercial Plot", "Villa"].includes(
               assetType
             ) && (
@@ -482,7 +408,9 @@ const BookAsset = () => {
               </span>
             </div>
             <div className="price-item highlight">
-              <span className="label">Discount ({pricing.discountPercent || 0}%)</span>
+              <span className="label">
+                Total Discount ({pricing.discountPercent || 0}%)
+              </span>
               <span className="value">
                 ₹{formatIndianPrice(pricing.discount)}
               </span>
@@ -492,12 +420,31 @@ const BookAsset = () => {
               <span className="value">
                 ₹{formatIndianPrice(pricing.finalPrice)}
               </span>
+            </div>            <div className="form-group">
+              <label>Booking Amount</label>
+              <input
+                type="number"
+                value={pricing.bookingAmount}
+                onChange={(e) => {
+                  const newBookingAmount = parseFloat(e.target.value) || 0;
+                  setPricing((prev) => ({
+                    ...prev,
+                    bookingAmount: newBookingAmount,
+                  }));
+                }}
+                min="0"
+                step="1000"
+                required
+              />
             </div>
-            <div className="price-item booking">
-              <span className="label">Booking Amount (20%)</span>
-              <span className="value">
-                ₹{formatIndianPrice(pricing.bookingAmount)}
-              </span>
+            <div className="form-group">
+              <label>Commission Amount</label>
+              <input
+                type="text"
+                value={`₹${formatIndianPrice((pricing.bookingAmount * (pricing.discountPercent || 0)) / 100)}`}
+                readOnly
+                className="readonly-input"
+              />
             </div>
           </div>
         </div>

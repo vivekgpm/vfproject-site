@@ -45,7 +45,7 @@ export const getUsersByRole = async (role) => {
 };
 
 // Search users by name with pagination
-export const searchUsersByName = async (searchTerm, limitCount = 5) => {
+export const searchUsersByName = async (searchTerm, limitCount = 50) => {
   try {
     const q = query(
       collection(db, "users"),
