@@ -1,29 +1,69 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { FaPrint } from 'react-icons/fa';
 
 const BookingDetails = () => {
   const { transactionId } = useParams();
   const [booking, setBooking] = useState(null);
+  const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchBooking = async () => {
+    const fetchBookingAndPayments = async () => {
       try {
-        const bookingDoc = await getDoc(doc(db, 'transactions', transactionId));
-        if (bookingDoc.exists()) {
-          setBooking({ id: bookingDoc.id, ...bookingDoc.data() });
+        let assetData;
+        
+        // First try to get the asset purchase from assetPurchases collection
+        const assetPurchaseDoc = await getDoc(doc(db, 'assetPurchases', transactionId));
+        
+        if (assetPurchaseDoc.exists()) {
+          assetData = { id: assetPurchaseDoc.id, ...assetPurchaseDoc.data() };
+        } else {
+          // If not found in assetPurchases, try to get from transactions
+          const transactionDoc = await getDoc(doc(db, 'transactions', transactionId));
+          
+          if (transactionDoc.exists()) {
+            const transData = transactionDoc.data();
+            // Use the assetId from transaction to get asset purchase details
+            const assetPurchaseQuery = query(
+              collection(db, 'assetPurchases'),
+              where('assetId', '==', transData.assetId)
+            );
+            const assetPurchaseSnapshot = await getDocs(assetPurchaseQuery);
+            
+            if (!assetPurchaseSnapshot.empty) {
+              const assetDoc = assetPurchaseSnapshot.docs[0];
+              assetData = { id: assetDoc.id, ...assetDoc.data() };
+            }
+          }
+        }
+
+        if (assetData) {
+          setBooking(assetData);
+
+          // Fetch all payments related to this asset
+          const paymentsQuery = query(
+            collection(db, 'transactions'),
+            where('assetId', '==', assetData.assetId),
+            where('type', '==', 'asset_payment')
+          );
+          const paymentsSnapshot = await getDocs(paymentsQuery);
+          const paymentsData = paymentsSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+          setPayments(paymentsData);
         }
       } catch (error) {
-        console.error('Error fetching booking:', error);
+        console.error('Error fetching booking details:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchBooking();
+    fetchBookingAndPayments();
   }, [transactionId]);
 
   const handlePrint = () => {
@@ -32,6 +72,9 @@ const BookingDetails = () => {
 
   if (loading) return <div>Loading...</div>;
   if (!booking) return <div>Booking not found</div>;
+
+  // Use booking amount from asset purchase as total paid
+  const totalPaid = booking.bookingAmount || 0;
 
   return (
     <div className="booking-details-container">
@@ -48,8 +91,8 @@ const BookingDetails = () => {
 
       <div className="booking-sections">
         <section className="info-section">
-          <h3>{booking.bookingType === 'member' ? 'Member' : 'Non-member'} Information</h3>
-          {booking.bookingType === 'member' ? (
+          <h3>{booking.nonMemberDetails ? 'Non-member' : 'Member'} Information</h3>
+          {!booking.nonMemberDetails ? (
             <div className="info-grid">
               <div className="info-item">
                 <span className="label">Name</span>
@@ -57,7 +100,7 @@ const BookingDetails = () => {
               </div>
               <div className="info-item">
                 <span className="label">Referral ID</span>
-                <span className="value">{booking.propertyDetails.referralId}</span>
+                <span className="value">{booking.propertyDetails?.referralId}</span>
               </div>
             </div>
           ) : (
@@ -82,6 +125,10 @@ const BookingDetails = () => {
           <h3>Property Details</h3>
           <div className="info-grid">
             <div className="info-item">
+              <span className="label">Asset ID</span>
+              <span className="value">{booking.assetId}</span>
+            </div>
+            <div className="info-item">
               <span className="label">Project Name</span>
               <span className="value">{booking.projectName}</span>
             </div>
@@ -91,13 +138,13 @@ const BookingDetails = () => {
             </div>
             <div className="info-item">
               <span className="label">Area</span>
-              <span className="value">{booking.propertyDetails.area}</span>
+              <span className="value">{booking.propertyDetails?.area}</span>
             </div>
             <div className="info-item">
               <span className="label">Location</span>
-              <span className="value">{booking.propertyDetails.location}</span>
+              <span className="value">{booking.propertyDetails?.location}</span>
             </div>
-            {Object.entries(booking.propertyDetails)
+            {Object.entries(booking.propertyDetails || {})
               .filter(([key]) => !['area', 'location'].includes(key))
               .map(([key, value]) => (
                 <div key={key} className="info-item">
@@ -111,7 +158,7 @@ const BookingDetails = () => {
         <section className="info-section">
           <h3>Pricing Details</h3>
           <div className="info-grid">
-            {["Residential Plot", "Commercial Plot", "Villa"].includes(booking.assetType) && (
+            {booking.pricing?.pricePerSqFt && (
               <div className="info-item">
                 <span className="label">Price per sq.ft</span>
                 <span className="value">₹{booking.pricing.pricePerSqFt?.toLocaleString() || '0'}/sq.ft</span>
@@ -119,28 +166,79 @@ const BookingDetails = () => {
             )}
             <div className="info-item">
               <span className="label">Total Price</span>
-              <span className="value">₹{booking.pricing.totalPrice.toLocaleString()}</span>
+              <span className="value">₹{booking.pricing?.totalPrice?.toLocaleString() || '0'}</span>
             </div>
             <div className="info-item highlight">
-              <span className="label">Discount Amount</span>
-              <span className="value">₹{booking.pricing.discount.toLocaleString()}</span>
+              <span className="label">Total Discount ({booking.pricing?.discountPercentage || 0}%)</span>
+              <span className="value">₹{booking.pricing?.totalDiscountAmount?.toLocaleString() || '0'}</span>
             </div>
             <div className="info-item">
               <span className="label">Final Price</span>
-              <span className="value">₹{booking.pricing.finalPrice.toLocaleString()}</span>
-            </div>
-            <div className="info-item">
-              <span className="label">Booking Amount</span>
-              <span className="value">₹{booking.pricing.bookingAmount.toLocaleString()}</span>
-            </div>
-            <div className="info-item">
-              <span className="label">Incentive</span>
-              <span className="value">₹{booking.pricing.incentive.toLocaleString()}</span>
+              <span className="value">₹{booking.pricing?.finalPrice?.toLocaleString() || '0'}</span>
             </div>
           </div>
         </section>
+
+        <section className="info-section">
+          <h3>Payment Details</h3>
+          <div className="info-grid">
+            <div className="info-item">
+              <span className="label">Total Paid Amount</span>
+              <span className="value">₹{totalPaid.toLocaleString()}</span>
+            </div>
+            <div className="info-item">
+              <span className="label">Remaining Payment</span>
+              <span className="value">₹{booking.pricing?.remainingPayment?.toLocaleString() || '0'}</span>
+            </div>
+            <div className="info-item">
+              <span className="label">Earned Commission</span>
+              <span className="value">₹{booking.amount?.toLocaleString() || '0'}</span>
+            </div>
+            <div className="info-item">
+              <span className="label">Remaining Commission</span>
+              <span className="value">₹{booking.pricing?.remainingDiscount?.toLocaleString() || '0'}</span>
+            </div>
+          </div>
+
+          <div className="payments-list">
+            <h4>Payment History</h4>
+            <table className="payments-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Amount</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                {payments.map((payment) => (
+                  <tr key={payment.id}>
+                    <td>{payment.createdAt?.toDate().toLocaleDateString()}</td>
+                    <td>₹{payment.amount?.toLocaleString()}</td>
+                    <td>{payment.description}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
       </div>
+
       <style jsx="true">{`
+        .payments-table {
+          width: 100%;
+          margin-top: 20px;
+          border-collapse: collapse;
+        }
+        .payments-table th,
+        .payments-table td {
+          padding: 10px;
+          border: 1px solid #ddd;
+          text-align: left;
+        }
+        .payments-table th {
+          background-color: #f5f5f5;
+        }
         @media print {
           .print-button, .nav-links .btn {
             display: none !important;
@@ -151,6 +249,9 @@ const BookingDetails = () => {
             padding: 20mm;
             margin: 0;
             background: white;
+          }
+          .payments-table {
+            page-break-inside: avoid;
           }
         }
       `}</style>

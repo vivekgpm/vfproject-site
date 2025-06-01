@@ -8,6 +8,7 @@ import {
   query,
   where,
   getDocs,
+  
 } from "firebase/firestore";
 import "./AppStyles.css";
 
@@ -36,19 +37,25 @@ const UserProfile = () => {
         }
 
         const userData = userDoc.data();
-        setUserDetails(userData);
-
-        // Fetch transactions
+        setUserDetails(userData); // Fetch transactions
         const transactionsRef = collection(db, "transactions");
         const q = query(transactionsRef, where("userId", "==", userData.bdaId));
         const querySnapshot = await getDocs(q);
-
         const transactionsList = querySnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
 
-        setTransactions(transactionsList);
+        // Sort transactions by updatedAt in descending order
+        const sortedTransactions = transactionsList.sort((a, b) => {
+          const dateA =
+            a.updatedAt?.toDate() || a.createdAt?.toDate() || new Date(0);
+          const dateB =
+            b.updatedAt?.toDate() || b.createdAt?.toDate() || new Date(0);
+          return dateB - dateA;
+        });
+
+        setTransactions(sortedTransactions);
 
         // Calculate totals
         const totalEarnings = transactionsList.reduce((sum, transaction) => {
@@ -169,7 +176,7 @@ const UserProfile = () => {
               <thead>
                 <tr>
                   <th>Transaction Date</th>
-                  <th>Type</th>
+                  <th>Transaction Type</th>
                   <th>Amount</th>
                   <th>Payment Date</th>
                   <th>Remarks</th>
@@ -181,7 +188,11 @@ const UserProfile = () => {
                     <td>
                       {transaction.createdAt?.toDate().toLocaleDateString()}
                     </td>
-                    <td>{transaction.type}</td>
+                    <td>
+                      {transaction.type === "assetPurchase"
+                        ? "Asset Purchase"
+                        : transaction.type}
+                    </td>
                     <td>₹{transaction.amount?.toLocaleString("en-IN")}</td>
                     <td>{transaction.paymentDate || "-"}</td>
                     <td>{transaction.remarks || "-"}</td>

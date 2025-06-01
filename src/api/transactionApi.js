@@ -4,12 +4,31 @@ import { db } from '../firebase';
 // Create a new transaction
 export const createTransaction = async (transactionData) => {
   try {
-    const docRef = await addDoc(collection(db, "transactions"), {
+    const timestamp = new Date();
+    const dataWithTimestamp = {
       ...transactionData,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-    return docRef.id;
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
+
+    // For asset purchases, create in both collections
+    if (transactionData.type === 'assetPurchase') {
+      // Create in assetPurchases collection
+      const assetPurchaseRef = await addDoc(collection(db, "assetPurchases"), dataWithTimestamp);      // Also create in transactions collection
+      await addDoc(collection(db, "transactions"), dataWithTimestamp);
+      
+      return assetPurchaseRef.id;
+    } 
+    // For asset payments, just create in transactions collection
+    else if (transactionData.type === 'asset_payment') {
+      const docRef = await addDoc(collection(db, "transactions"), dataWithTimestamp);
+      return docRef.id;
+    }
+    // For any other type of transaction
+    else {
+      const docRef = await addDoc(collection(db, "transactions"), dataWithTimestamp);
+      return docRef.id;
+    }
   } catch (error) {
     console.error("Error creating transaction:", error);
     throw error;
@@ -19,26 +38,93 @@ export const createTransaction = async (transactionData) => {
 // Get a transaction by ID
 export const getTransactionById = async (transactionId) => {
   try {
-    const docRef = doc(db, "transactions", transactionId);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      return { id: docSnap.id, ...docSnap.data() };
+    // First check assetPurchases collection
+    const assetPurchaseRef = doc(db, "assetPurchases", transactionId);
+    const assetPurchaseSnap = await getDoc(assetPurchaseRef);
+    
+    if (assetPurchaseSnap.exists()) {
+      return { id: assetPurchaseSnap.id, ...assetPurchaseSnap.data() };
     }
-    throw new Error("Transaction not found");
+
+    // If not found in assetPurchases, check transactions collection
+    const transactionRef = doc(db, "transactions", transactionId);
+    const transactionSnap = await getDoc(transactionRef);
+    
+    if (transactionSnap.exists()) {
+      return { id: transactionSnap.id, ...transactionSnap.data() };
+    }
+
+    throw new Error("Transaction not found in either collection");
   } catch (error) {
     console.error("Error fetching transaction:", error);
     throw error;
   }
 };
 
+// Get transaction by ID and collection type
+const getDocumentByIdAndType = async (transactionId) => {
+  // First check assetPurchases collection
+  const assetPurchaseRef = doc(db, "assetPurchases", transactionId);
+  const assetPurchaseSnap = await getDoc(assetPurchaseRef);
+  
+  if (assetPurchaseSnap.exists()) {
+    return {
+      ref: assetPurchaseRef,
+      type: 'assetPurchase',
+      data: assetPurchaseSnap.data()
+    };
+  }
+
+  // Check transactions collection
+  const transactionRef = doc(db, "transactions", transactionId);
+  const transactionSnap = await getDoc(transactionRef);
+  
+  if (transactionSnap.exists()) {
+    return {
+      ref: transactionRef,
+      type: 'transaction',
+      data: transactionSnap.data()
+    };
+  }
+
+  throw new Error("Document not found in either collection");
+};
+
 // Update a transaction
-export const updateTransaction = async (transactionId, data) => {
+export const updateTransaction = async (transactionId, updateData) => {
   try {
-    const docRef = doc(db, "transactions", transactionId);
-    await updateDoc(docRef, {
-      ...data,
-      updatedAt: new Date()
-    });
+    const timestamp = new Date();
+    const dataWithTimestamp = {
+      ...updateData,
+      updatedAt: timestamp
+    };
+
+    // Get the document reference and type
+    const document = await getDocumentByIdAndType(transactionId);
+
+    if (document.type === 'assetPurchase') {
+      // For asset purchases, update both collections
+      const assetPurchaseRef = doc(db, "assetPurchases", transactionId);
+      await updateDoc(assetPurchaseRef, dataWithTimestamp);
+
+      // Check if there's a matching record in transactions collection
+      const transactionsQuery = query(
+        collection(db, "transactions"),
+        where("assetId", "==", document.data.assetId),
+        where("type", "==", "assetPurchase")
+      );
+      const transactionsSnap = await getDocs(transactionsQuery);
+      
+      // Update the matching transaction record if it exists
+      transactionsSnap.forEach(async (transactionDoc) => {
+        await updateDoc(doc(db, "transactions", transactionDoc.id), dataWithTimestamp);
+      });
+    } else {
+      // For regular transactions, just update the transactions collection
+      const transactionRef = doc(db, "transactions", transactionId);
+      await updateDoc(transactionRef, dataWithTimestamp);
+    }
+
     return true;
   } catch (error) {
     console.error("Error updating transaction:", error);

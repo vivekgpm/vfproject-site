@@ -5,6 +5,16 @@ import { createTransaction } from "../api/transactionApi";
 import UserSearchSelect from "./UserSearchSelect";
 
 const BookAsset = () => {
+  // Generate a unique 7-digit alphanumeric asset ID
+  const generateAssetId = () => {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let result = "";
+    for (let i = 0; i < 7; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  };
+
   // Format number in Indian numbering system
   const formatIndianPrice = (num) => {
     if (!num) return "0";
@@ -88,12 +98,41 @@ const BookAsset = () => {
       });
     }
   }, [projectData, assetType]);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
+  };
+
+  const handleAreaChange = (e) => {
+    const { value } = e.target;
+    const newArea = parseFloat(value) || 0;
+
+    // Update form data first
+    setFormData((prev) => ({
+      ...prev,
+      area: value,
+    }));
+
+    // Then update pricing
+    const pricePerSqFt = projectData.price || 0;
+    const totalPrice = newArea * pricePerSqFt;
+    const discountPercent = parseFloat(projectData.discount || 0);
+    const discountAmount = (totalPrice * discountPercent) / 100;
+    const finalPrice = totalPrice;
+    const bookingAmount = finalPrice * 0.2;
+
+    setPricing({
+      totalPrice,
+      discount: discountAmount,
+      finalPrice,
+      bookingAmount,
+      pricePerSqFt,
+      discountPercent,
+    });
   };
 
   const renderAssetFields = () => {
@@ -114,33 +153,15 @@ const BookAsset = () => {
               />
             </div>
             <div className="form-group">
-              <label>Area (sq.ft)</label>
+              <label>Area (sq.ft)</label>{" "}
               <input
                 type="number"
                 name="area"
                 value={formData.area}
-                onChange={(e) => {
-                  handleInputChange(e);
-                  const newArea = parseFloat(e.target.value) || 0;
-                  const pricePerSqFt =
-                    projectData.pricePerSqFt || projectData.price || 0;
-                  const totalPrice = newArea * pricePerSqFt;
-                  const discountPercent = parseFloat(projectData.discount || 0);
-                  const discountAmount = (totalPrice * discountPercent) / 100;
-                  const finalPrice = totalPrice;
-                  const bookingAmount = finalPrice * 0.2;
-
-                  setPricing({
-                    totalPrice,
-                    discount: discountAmount,
-                    finalPrice,
-                    bookingAmount,
-                    pricePerSqFt,
-                  });
-                }}
+                onChange={handleAreaChange}
                 required
                 min="0"
-                step="0.01"
+                step="1"
               />
             </div>
             <div className="form-group">
@@ -221,10 +242,16 @@ const BookAsset = () => {
     }
 
     try {
-      const transactionData = {
-        bookingType,
-        userId: selectedUser?.id,
+      const assetId = generateAssetId();
+      // Create main asset purchase transaction
+      const assetPurchaseData = {
+        type: "assetPurchase",
+        userId: selectedUser?.bdaId || selectedUser.id,
         userDisplayName: selectedUser?.displayName,
+        assetId,
+        bookingAmount: pricing.bookingAmount,
+        discountPercentage: pricing.discountPercent || 0,
+        amount: (pricing.bookingAmount * (pricing.discountPercent || 0)) / 100,
         projectId,
         projectName: projectData.name,
         assetType,
@@ -232,24 +259,32 @@ const BookAsset = () => {
           ...formData,
           area: projectData.area,
           location: projectData.location,
-        },        pricing: {
-          ...pricing,
-          totalPrice: pricing.totalPrice,
-          discount: pricing.discount,
-          finalPrice: pricing.finalPrice,
-          bookingAmount: pricing.bookingAmount,
-          pricePerSqFt: pricing.pricePerSqFt,
-          incentive: selectedUser?.earning || 0,
-          commissionAmount: (pricing.bookingAmount * (pricing.discountPercent || 0)) / 100,
         },
-        status: "pending",
+        pricing: {
+          totalPrice: pricing.totalPrice,
+          discountPercentage: pricing.discountPercent || 0,
+          finalPrice: pricing.finalPrice,
+          pricePerSqFt: pricing.pricePerSqFt,
+          totalDiscountAmount: pricing.discount,
+          remainingPayment: pricing.finalPrice - pricing.bookingAmount,
+          remainingDiscount:
+            pricing.discount -
+            (pricing.bookingAmount * (pricing.discountPercent || 0)) / 100,
+        },
+        description: `Booking discount for ${projectData.name} - ${assetType}`,
+        status: "Pending",
       };
 
+      // Add non-member details if applicable
       if (bookingType === "non-member") {
-        transactionData.nonMemberDetails = nonMemberData;
-      }      const transactionId = await createTransaction(transactionData);
+        assetPurchaseData.nonMemberDetails = nonMemberData;
+      }
+
+      // Create the asset purchase record
+      const assetPurchaseId = await createTransaction(assetPurchaseData);
+
       alert("Booking successful! Redirecting to booking details...");
-      navigate(`/booking-details/${transactionId}`);
+      navigate(`/booking-details/${assetPurchaseId}`);
     } catch (error) {
       console.error("Error creating transaction:", error);
       alert("Error creating booking. Please try again.");
@@ -314,7 +349,7 @@ const BookAsset = () => {
               onChange={(e) => setBookingType(e.target.value)}
             />
             Non-member
-          </label>{" "}
+          </label>
         </div>
 
         {bookingType === "member" ? (
@@ -388,7 +423,7 @@ const BookAsset = () => {
               assetType
             ) && (
               <>
-                {" "}
+                
                 <div className="price-item">
                   <span className="label">Price per sq.ft</span>
                   <span className="value">
@@ -420,7 +455,8 @@ const BookAsset = () => {
               <span className="value">
                 ₹{formatIndianPrice(pricing.finalPrice)}
               </span>
-            </div>            <div className="form-group">
+            </div>
+            <div className="form-group">
               <label>Booking Amount</label>
               <input
                 type="number"
@@ -441,7 +477,9 @@ const BookAsset = () => {
               <label>Commission Amount</label>
               <input
                 type="text"
-                value={`₹${formatIndianPrice((pricing.bookingAmount * (pricing.discountPercent || 0)) / 100)}`}
+                value={`₹${formatIndianPrice(
+                  (pricing.bookingAmount * (pricing.discountPercent || 0)) / 100
+                )}`}
                 readOnly
                 className="readonly-input"
               />

@@ -216,12 +216,12 @@ const AddMember = () => {
           remarks: formData.remarks,
           nomineeName: formData.nomineeName,
           nomineeRelation: formData.nomineeRelation,
-          bankName : formData.bankName,
+          bankName: formData.bankName,
           accountNo: formData.accountNo,
-          ifscCode: formData.ifscCode,  
+          ifscCode: formData.ifscCode,
           branchName: formData.branchName,
           panCard: formData.panCard,
-          aadharCard: formData.aadharCard,          
+          aadharCard: formData.aadharCard,
           userData: {
             ...formData,
             bdaId,
@@ -250,9 +250,7 @@ const AddMember = () => {
           if (referrerDoc.exists()) {
             const referrerData = referrerDoc.data();
             const referrerPlan = plans.find(
-              (p) =>
-                p.amount === referrerData.investmentPlan ||
-                referrerData.planAmount
+              (p) => p.amount === referrerData.planAmount
             );
 
             if (referrerPlan) {
@@ -360,7 +358,9 @@ const AddMember = () => {
 
       <div className="form-container">
         {errorMessage && <div className="error-message">{errorMessage}</div>}
-        {successMessage && <div className="success-message">{successMessage}</div>}
+        {successMessage && (
+          <div className="success-message">{successMessage}</div>
+        )}
 
         <form onSubmit={handleCreateUser} className="create-user-form">
           {/* Personal Information Section */}
@@ -629,7 +629,8 @@ const AddMember = () => {
 
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="ifscCode">IFSC Code:</label>                <input
+                <label htmlFor="ifscCode">IFSC Code:</label>{" "}
+                <input
                   type="text"
                   id="ifscCode"
                   name="ifscCode"

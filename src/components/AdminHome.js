@@ -132,7 +132,7 @@ const AdminHome = () => {
       <h2>Admin Dashboard</h2>
 
       <div className="admin-stats">
-        {" "}
+        
         <div className="stat-card">
           <h3>Total Transactions</h3>
           <p>{totalTransactions}</p>
@@ -191,11 +191,14 @@ const AdminHome = () => {
         <Link to="/admin/newmember" className="admin-button">
           Manage Members
         </Link>
+        <Link to="/admin/manage-asset-transactions" className="admin-button">
+          Manage Asset Purchase
+        </Link>
       </div>
 
       <h3>Recent Transactions</h3>
       <div className="table-responsive">
-        <table className="transactions-table">          
+        <table className="transactions-table">
           <thead>
             <tr>
               <th>Transaction Date</th>
@@ -212,7 +215,11 @@ const AdminHome = () => {
               <tr key={transaction.id}>
                 <td>{formatDate(transaction.createdAt)}</td>
                 <td>{transaction.userId || "N/A"}</td>
-                <td>{transaction.type || "N/A"}</td>
+                <td>
+                  {transaction.type === "assetPurchase"
+                    ? "Asset Purchase"
+                    : transaction.type}
+                </td>
                 <td>₹{transaction.amount.toLocaleString("en-IN") || "0"}</td>
                 <td>
                   {transaction.paymentDate

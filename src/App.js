@@ -19,6 +19,8 @@ import EditTransaction from './components/EditTransaction';
 import UserProfile from "./components/UserProfile"; // Import UserProfile
 import EditProfile from "./components/EditProfile"; // Import EditProfile
 import "../src/components/AppStyles.css"; // Import the centralized CSS file
+import ManageAssetTransaction from "./components/ManageAssetTransaction";
+import UpdateAssetPurchase from "./components/UpdateAssetPurchase";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 
 function App() {
@@ -67,6 +69,14 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+                 <Route
+                path="/admin/manage-asset-transactions"
+                element={
+                  <ProtectedRoute isAdminRoute={true}>
+                    <ManageAssetTransaction />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="/admin/user/:userId"
                 element={
@@ -105,6 +115,14 @@ function App() {
                 element={
                   <ProtectedRoute isAdminRoute={true}>
                     <EditTransaction />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/update-asset-purchase"
+                element={
+                  <ProtectedRoute isAdminRoute={true}>
+                    <UpdateAssetPurchase />
                   </ProtectedRoute>
                 }
               />
