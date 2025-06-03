@@ -479,6 +479,7 @@ const AddMember = () => {
 
           {/* Investment Details Section */}
           <div className="form-section">
+            
             <h3 className="section-title">Investment Details</h3>
             <div className="form-row">
               <div className="form-group">
