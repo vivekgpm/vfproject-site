@@ -479,7 +479,7 @@ const AddMember = () => {
 
           {/* Investment Details Section */}
           <div className="form-section">
-            
+
             <h3 className="section-title">Investment Details</h3>
             <div className="form-row">
               <div className="form-group">
@@ -589,9 +589,9 @@ const AddMember = () => {
                   name="panCard"
                   value={formData.panCard}
                   onChange={handleInputChange}
-                  pattern="[A-Z]{5}[0-9]{4}[A-Z]{1}"
+                 // pattern="[A-Z]{5}[0-9]{4}[A-Z]{1}"
                   title="Enter valid PAN card number (e.g., ABCDE1234F)"
-                  required
+                  
                   placeholder="ABCDE1234F"
                 />
               </div>
@@ -603,9 +603,9 @@ const AddMember = () => {
                   name="aadharCard"
                   value={formData.aadharCard}
                   onChange={handleInputChange}
-                  pattern="[0-9]{12}"
+                 // pattern="[0-9]{12}"
                   title="Enter valid 12-digit Aadhar number"
-                  required
+                  
                   placeholder="123456789012"
                 />
               </div>
@@ -624,7 +624,7 @@ const AddMember = () => {
                   name="accountNo"
                   value={formData.accountNo}
                   onChange={handleInputChange}
-                  required
+                  
                   placeholder="Enter account number"
                 />
               </div>
@@ -636,7 +636,7 @@ const AddMember = () => {
                   name="bankName"
                   value={formData.bankName}
                   onChange={handleInputChange}
-                  required
+                  
                   placeholder="Enter bank name"
                 />
               </div>
@@ -651,7 +651,7 @@ const AddMember = () => {
                   name="ifscCode"
                   value={formData.ifscCode}
                   onChange={handleInputChange}
-                  required
+                  
                   placeholder="Enter IFSC code"
                 />
               </div>
@@ -663,7 +663,7 @@ const AddMember = () => {
                   name="branchName"
                   value={formData.branchName}
                   onChange={handleInputChange}
-                  required
+                  
                   placeholder="Enter branch name"
                 />
               </div>
