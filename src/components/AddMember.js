@@ -58,6 +58,7 @@ const AddMember = () => {
     bankName: "",
     ifscCode: "",
     branchName: "",
+    investmentDate: "", // Added investmentDate
   });
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -222,6 +223,7 @@ const AddMember = () => {
           branchName: formData.branchName,
           panCard: formData.panCard,
           aadharCard: formData.aadharCard,
+          investmentDate: formData.investmentDate,
           userData: {
             ...formData,
             bdaId,
@@ -297,6 +299,7 @@ const AddMember = () => {
         password: "Complex123!",
         paymentMode: "Cash",
         remarks: "",
+        investmentDate: "",
       });
 
       // Generate new BDA ID for next user
@@ -506,13 +509,24 @@ const AddMember = () => {
                 >
                   <option value="Online">Online</option>
                   <option value="NEFT/RTGS">NEFT/RTGS</option>
-                  <option value="UPI">UPI</option>
+                  <option value="UPI">Net Banking</option>
                   <option value="Cheque">Cheque</option>
                 </select>
               </div>
             </div>
-
             <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="investmentDate">Investment Date:</label>
+                <input
+                  type="date"
+                  id="investmentDate"
+                  name="investmentDate"
+                  value={formData.investmentDate}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+
               <div className="form-group">
                 <label>Referral ID:</label>
                 <UserSearchSelect onUserSelect={handleReferralSelect} />

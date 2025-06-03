@@ -3,16 +3,7 @@ import { Link } from "react-router-dom";
 import { FaSearch, FaArrowLeft } from "react-icons/fa";
 import { useState, useEffect, useCallback } from "react";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
-import {
-  getFirestore,
-  doc,
-  getDoc,
-  getDocs,
-  collection,
-  query,
-  where,
-  
-} from "firebase/firestore";
+import { getFirestore, doc, getDoc } from "firebase/firestore";
 
 import "../components/AppStyles.css"; // Import your CSS styles
 
@@ -20,6 +11,7 @@ function AdminUserManagement() {
   const [currentUser, setCurrentUser] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [users, setUsers] = useState([]);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -36,21 +28,30 @@ function AdminUserManagement() {
   // Fetch all users (admin only)
   const fetchUsers = useCallback(async () => {
     try {
-      const usersRef = collection(db, "users");
-      const q = query(usersRef, where("role", "==", "user"));
-      const querySnapshot = await getDocs(q);
-      const usersList = querySnapshot.docs.map((doc) => ({
-        uid: doc.id,
-        ...doc.data(),
-      }));
-      setUsers(usersList);
+      const idToken = await auth.currentUser.getIdToken(true);
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL_3}/api/users`,
+        {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+          },
+        }
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      setUsers(data.users || []); // Extract the users array from the response
     } catch (error) {
       console.error("Error fetching users:", error);
       setErrorMessage("Failed to load users. Please try again.");
     } finally {
       setIsLoading(false);
     }
-  }, [db]);
+  }, [auth]);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -77,22 +78,25 @@ function AdminUserManagement() {
 
     return () => unsubscribe();
   }, [auth, db, fetchUsers]);
-  // Handle input changes
 
   // Handle form submission to create a new user
   const handleDeleteUser = async (userId) => {
     if (window.confirm("Are you sure you want to delete this user?")) {
+      setIsDeleting(true);
       try {
         // Get fresh ID token for authentication
         const idToken = await auth.currentUser.getIdToken(true);
-        
+
         // Make API call to delete user
-        const response = await fetch(`${process.env.REACT_APP_API_URL_3}/api/users/${userId}`, {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${idToken}`,
-          },
-        });
+        const response = await fetch(
+          `${process.env.REACT_APP_API_URL_3}/api/users/${userId}`,
+          {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${idToken}`,
+            },
+          }
+        );
 
         if (!response.ok) {
           const errorData = await response.json();
@@ -103,36 +107,50 @@ function AdminUserManagement() {
         fetchUsers();
       } catch (error) {
         console.error("Error deleting user:", error);
-        setErrorMessage(error.message || "Failed to delete user. Please try again.");
+        setErrorMessage(
+          error.message || "Failed to delete user. Please try again."
+        );
+      } finally {
+        setIsDeleting(false);
       }
     }
   };
 
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
-
-  if (!currentUser) {
-    return <div>Please sign in to access this page.</div>;
-  }
-
-  if (!isAdmin) {
-    return (
-      <div>Access denied. You need admin privileges to view this page.</div>
-    );
-  }
   const formatDate = (timestamp) => {
     if (!timestamp) return "N/A";
-    // Check if it's a Firestore Timestamp
-    if (timestamp.toDate) {
-      return timestamp.toDate().toLocaleString();
+
+    try {
+      // Check if it's a Firestore Timestamp with toDate method
+      if (timestamp.toDate && typeof timestamp.toDate === "function") {
+        return timestamp.toDate().toLocaleString();
+      }
+
+      // Check if it's a Firestore timestamp object with _seconds property
+      if (timestamp._seconds) {
+        return new Date(timestamp._seconds * 1000).toLocaleString();
+      }
+
+      // Check if it's a regular timestamp object with seconds property
+      if (timestamp.seconds) {
+        return new Date(timestamp.seconds * 1000).toLocaleString();
+      }
+
+      // If it's a number (Unix timestamp)
+      if (typeof timestamp === "number") {
+        // Check if it's in seconds or milliseconds
+        const date =
+          timestamp > 1000000000000
+            ? new Date(timestamp)
+            : new Date(timestamp * 1000);
+        return date.toLocaleString();
+      }
+
+      // If it's already a Date object or string
+      return new Date(timestamp).toLocaleString();
+    } catch (error) {
+      console.error("Error formatting date:", error, timestamp);
+      return "Invalid Date";
     }
-    // Check if it's a regular timestamp
-    if (timestamp.seconds) {
-      return new Date(timestamp.seconds * 1000).toLocaleString();
-    }
-    // If it's already a Date object or string
-    return new Date(timestamp).toLocaleString();
   };
 
   // Add sorting function
@@ -152,21 +170,6 @@ function AdminUserManagement() {
     });
   };
 
-  // Filter and sort users
-  const filteredAndSortedUsers = users.filter((user) =>
-    Object.values(user)
-      .join(" ")
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase())
-  );
-
-  // Calculate pagination
-  const totalPages = Math.ceil(filteredAndSortedUsers.length / pageSize);
-  const paginatedUsers = sortUsers(filteredAndSortedUsers).slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
-
   // Handle sort toggle
   const handleSort = (field) => {
     if (sortField === field) {
@@ -176,6 +179,38 @@ function AdminUserManagement() {
       setSortDirection("asc");
     }
   };
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!currentUser) {
+    return <div>Please sign in to access this page.</div>;
+  }
+
+  if (!isAdmin) {
+    return (
+      <div>Access denied. You need admin privileges to view this page.</div>
+    );
+  }
+
+  // Filter and sort users - moved this logic here to avoid scoping issues
+  const filteredUsers = users.filter((user) =>
+    Object.values(user)
+      .join(" ")
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase())
+  );
+
+  const sortedUsers = sortUsers(filteredUsers);
+
+  // Calculate pagination
+  const totalPages = Math.ceil(sortedUsers.length / pageSize);
+  const paginatedUsers = sortedUsers.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
   return (
     <div className="admin-management-container">
       <div className="admin-header">
@@ -204,64 +239,105 @@ function AdminUserManagement() {
             </Link>
           </div>
 
+          {errorMessage && <div className="error-message">{errorMessage}</div>}
+
           <div className="users-table">
             <table>
               <thead>
-                <tr>                  {[
+                <tr>
+                  {[
                     ["displayName", "Name"],
                     ["bdaId", "BDA ID"],
                     ["phone", "Phone"],
                     ["investmentPlan", "Investment Plan"],
                     ["createdAt", "Created On"],
-                    ["actions", "Actions"]
+                    ["actions", "Actions"],
                   ].map(([field, label]) => (
                     <th
                       key={field}
-                      onClick={() => field !== "actions" ? handleSort(field) : null}
+                      onClick={() =>
+                        field !== "actions" ? handleSort(field) : null
+                      }
                       className={sortField === field ? sortDirection : ""}
+                      style={{
+                        cursor: field !== "actions" ? "pointer" : "default",
+                      }}
                     >
                       {label}
+                      {sortField === field && (
+                        <span>{sortDirection === "asc" ? " ↑" : " ↓"}</span>
+                      )}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {paginatedUsers.map((user) => (
-                  <tr key={user.uid}>
-                    <td><Link to={`/admin/user/${user.uid}`} className="user-link">{user.displayName}</Link></td>
-                    <td>{user.bdaId}</td>
-                    <td>{user.phone}</td>
-                    <td>₹{(user.planAmount || 0).toLocaleString('en-IN')}</td>
-                    <td>{formatDate(user.createdAt) || "N/A"}</td>
-                    <td>
-                      <div className="action-buttons">
-                        <Link to={`/admin/edit-profile/${user.uid}`} className="btn btn-warning btn-sm">Edit</Link>
-                        <button onClick={() => handleDeleteUser(user.uid)} className="btn btn-danger btn-sm">Delete</button>
-                      </div>
+                {paginatedUsers.length > 0 ? (
+                  paginatedUsers.map((user) => (
+                    <tr key={user.uid}>
+                      <td>
+                        <Link
+                          to={`/admin/user/${user.uid}`}
+                          className="user-link"
+                        >
+                          {user.displayName || user.email}
+                        </Link>
+                      </td>
+                      <td>{user.bdaId || "N/A"}</td>
+                      <td>{user.phone || "N/A"}</td>
+                      <td>₹{(user.planAmount || 0).toLocaleString("en-IN")}</td>
+                      <td>{formatDate(user.createdAt)}</td>
+                      <td>
+                        <div className="action-buttons">
+                          <Link
+                            to={`/admin/edit-profile/${user.uid}`}
+                            className="btn btn-warning btn-sm"
+                          >
+                            Edit
+                          </Link>
+                          <button
+                            onClick={() => handleDeleteUser(user.uid)}
+                            className="btn btn-danger btn-sm"
+                            disabled={isDeleting}
+                          >
+                            {isDeleting ? "Deleting..." : "Delete"}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="6" style={{ textAlign: "center" }}>
+                      {users.length === 0
+                        ? "No users found"
+                        : "No users match your search"}
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
 
-          <div className="pagination">
-            <button
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((p) => p - 1)}
-            >
-              Previous
-            </button>
-            <span>
-              Page {currentPage} of {totalPages}
-            </span>
-            <button
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage((p) => p + 1)}
-            >
-              Next
-            </button>
-          </div>
+          {totalPages > 1 && (
+            <div className="pagination">
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => p - 1)}
+              >
+                Previous
+              </button>
+              <span>
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((p) => p + 1)}
+              >
+                Next
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

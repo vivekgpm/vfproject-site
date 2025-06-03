@@ -234,12 +234,14 @@ const AdminHome = () => {
                   </span>
                 </td>
                 <td>
-                  <Link
-                    to={`/booking-details/${transaction.id}`}
-                    className="btn btn-info btn-sm"
-                  >
-                    View Details
-                  </Link>
+                  {transaction.type !== "Referral" && (
+                    <Link
+                      to={`/booking-details/${transaction.id}`}
+                      className="btn btn-info btn-sm"
+                    >
+                      View Details
+                    </Link>
+                  )}
                   <Link
                     to={`/edit-transaction/${transaction.id}`}
                     className="btn btn-warning btn-sm"
