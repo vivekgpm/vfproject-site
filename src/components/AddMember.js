@@ -48,11 +48,14 @@ const AddMember = () => {
     password: "Complex123!", // Default password
     paymentMode: "Online", // Default payment mode
     remarks: "", // New field for remarks
+    // Member details
+    memberPanCard: "", // New field for member's PAN Card
+    memberAadharCard: "", // New field for member's Aadhar Card
     // Nominee details
     nomineeName: "",
     nomineeRelation: "Spouse",
-    panCard: "",
-    aadharCard: "",
+    nomineePanCard: "", // Nominee's PAN Card (existing)
+    nomineeAadharCard: "", // Nominee's Aadhar Card (existing)
     // Bank details
     accountNo: "",
     bankName: "",
@@ -215,21 +218,29 @@ const AddMember = () => {
           referralId: formData.referralId || null,
           paymentMode: formData.paymentMode,
           remarks: formData.remarks,
+          // Member's PAN and Aadhar
+          memberPanCard: formData.memberPanCard,
+          memberAadharCard: formData.memberAadharCard,
+          // Nominee details
           nomineeName: formData.nomineeName,
           nomineeRelation: formData.nomineeRelation,
-          bankName: formData.bankName,
+          nomineePanCard: formData.nomineePanCard, // Nominee's PAN
+          nomineeAadharCard: formData.nomineeAadharCard, // Nominee's Aadhar
+          // Bank details
           accountNo: formData.accountNo,
+          bankName: formData.bankName,
           ifscCode: formData.ifscCode,
           branchName: formData.branchName,
-          panCard: formData.panCard,
-          aadharCard: formData.aadharCard,
           investmentDate: formData.investmentDate,
-          userData: {
+          userData: { // This userData object seems redundant if all fields are sent directly
             ...formData,
             bdaId,
             investmentPlan: planAmount,
             uid: null, // Will be set by the API
             role: "user",
+            // Ensure new fields are included here too if the API primarily uses userData
+            memberPanCard: formData.memberPanCard,
+            memberAadharCard: formData.memberAadharCard,
           },
         }),
       });
@@ -300,6 +311,16 @@ const AddMember = () => {
         paymentMode: "Cash",
         remarks: "",
         investmentDate: "",
+        memberPanCard: "", // Reset new fields
+        memberAadharCard: "", // Reset new fields
+        nomineeName: "", // Reset nominee fields
+        nomineeRelation: "Spouse",
+        nomineePanCard: "",
+        nomineeAadharCard: "",
+        accountNo: "", // Reset bank fields
+        bankName: "",
+        ifscCode: "",
+        branchName: "",
       });
 
       // Generate new BDA ID for next user
@@ -477,6 +498,40 @@ const AddMember = () => {
             </div>
           </div>
 
+          {/* Member Identification Section (New Section) */}
+          <div className="form-section">
+            <h3 className="section-title">Member Identification</h3>
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="memberPanCard">Member PAN Card Number:</label>
+                <input
+                  type="text"
+                  id="memberPanCard"
+                  name="memberPanCard"
+                  value={formData.memberPanCard}
+                  onChange={handleInputChange}
+                  // pattern="[A-Z]{5}[0-9]{4}[A-Z]{1}" // Optional pattern validation
+                  title="Enter valid PAN card number (e.g., ABCDE1234F)"
+                  placeholder="ABCDE1234F"
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="memberAadharCard">Member Aadhar Card Number:</label>
+                <input
+                  type="text"
+                  id="memberAadharCard"
+                  name="memberAadharCard"
+                  value={formData.memberAadharCard}
+                  onChange={handleInputChange}
+                  // pattern="[0-9]{12}" // Optional pattern validation
+                  title="Enter valid 12-digit Aadhar number"
+                  placeholder="123456789012"
+                />
+              </div>
+            </div>
+          </div>
+
+
           {/* Investment Details Section */}
           <div className="form-section">
 
@@ -509,8 +564,6 @@ const AddMember = () => {
                   required
                 >
                   <option value="Online">Online</option>
-                  <option value="NEFT/RTGS">NEFT/RTGS</option>
-                  <option value="UPI">Net Banking</option>
                   <option value="Cheque">Cheque</option>
                 </select>
               </div>
@@ -582,30 +635,30 @@ const AddMember = () => {
 
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="panCard">PAN Card Number:</label>
+                <label htmlFor="panCard">Nominee PAN Card Number:</label>
                 <input
                   type="text"
-                  id="panCard"
-                  name="panCard"
-                  value={formData.panCard}
+                  id="nomineePanCard"
+                  name="nomineePanCard"
+                  value={formData.nomineePanCard}
                   onChange={handleInputChange}
                  // pattern="[A-Z]{5}[0-9]{4}[A-Z]{1}"
                   title="Enter valid PAN card number (e.g., ABCDE1234F)"
-                  
+
                   placeholder="ABCDE1234F"
                 />
               </div>
               <div className="form-group">
-                <label htmlFor="aadharCard">Aadhar Card Number:</label>
+                <label htmlFor="aadharCard">Nominee Aadhar Card Number:</label>
                 <input
                   type="text"
-                  id="aadharCard"
-                  name="aadharCard"
-                  value={formData.aadharCard}
+                  id="nomineeAadharCard"
+                  name="nomineeAadharCard"
+                  value={formData.nomineeAadharCard}
                   onChange={handleInputChange}
                  // pattern="[0-9]{12}"
                   title="Enter valid 12-digit Aadhar number"
-                  
+
                   placeholder="123456789012"
                 />
               </div>
@@ -624,7 +677,7 @@ const AddMember = () => {
                   name="accountNo"
                   value={formData.accountNo}
                   onChange={handleInputChange}
-                  
+
                   placeholder="Enter account number"
                 />
               </div>
@@ -636,7 +689,7 @@ const AddMember = () => {
                   name="bankName"
                   value={formData.bankName}
                   onChange={handleInputChange}
-                  
+
                   placeholder="Enter bank name"
                 />
               </div>
@@ -651,7 +704,7 @@ const AddMember = () => {
                   name="ifscCode"
                   value={formData.ifscCode}
                   onChange={handleInputChange}
-                  
+
                   placeholder="Enter IFSC code"
                 />
               </div>
@@ -663,7 +716,7 @@ const AddMember = () => {
                   name="branchName"
                   value={formData.branchName}
                   onChange={handleInputChange}
-                  
+
                   placeholder="Enter branch name"
                 />
               </div>
