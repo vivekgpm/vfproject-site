@@ -22,7 +22,7 @@ function AdminUserManagement() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [users, setUsers] = useState([]);
   const [errorMessage, setErrorMessage] = useState("");
-
+  const [loadingMessage, setLoadingMessage] = useState("Loading users...");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortField, setSortField] = useState("displayName");
   const [sortDirection, setSortDirection] = useState("asc");
@@ -51,7 +51,11 @@ function AdminUserManagement() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
-      setUsers(data.users || []); // Extract the users array from the response
+      setUsers(data.users || []);
+      if (data.users.length === 0) {
+        setLoadingMessage("No users found");
+      }
+      // Extract the users array from the response
     } catch (error) {
       console.error("Error fetching users:", error);
       setErrorMessage("Failed to load users. Please try again.");
@@ -321,11 +325,7 @@ function AdminUserManagement() {
                 ) : (
                   <tr>
                     <td colSpan="6" style={{ textAlign: "center" }}>
-                      {users.length === 0 && !isLoading
-                        ? "No users found"
-                        : filteredUsers.length === 0
-                        ? "No users match your search"
-                        : "Loading users..."}
+                     {loadingMessage}
                     </td>
                   </tr>
                 )}
