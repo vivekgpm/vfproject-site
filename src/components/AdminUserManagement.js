@@ -6,6 +6,14 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
 
 import "../components/AppStyles.css"; // Import your CSS styles
+const LoadingOverlay = () => (
+  <div className="loading-overlay">
+    <div className="loading-content">
+      <div className="spinner"></div>
+      <p>Loading users...</p>
+    </div>
+  </div>
+);
 
 function AdminUserManagement() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -181,7 +189,11 @@ function AdminUserManagement() {
   };
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="loader-container">
+        <LoadingOverlay />
+      </div>
+    );
   }
 
   if (!currentUser) {
@@ -309,9 +321,11 @@ function AdminUserManagement() {
                 ) : (
                   <tr>
                     <td colSpan="6" style={{ textAlign: "center" }}>
-                      {users.length === 0
+                      {users.length === 0 && !isLoading
                         ? "No users found"
-                        : "No users match your search"}
+                        : filteredUsers.length === 0
+                        ? "No users match your search"
+                        : "Loading users..."}
                     </td>
                   </tr>
                 )}
