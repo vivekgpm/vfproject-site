@@ -3807,3 +3807,63 @@ textarea {
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
   }
 }
+
+.consent-section {
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.consent-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.consent-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.consent-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.consent-popup-content {
+  background-color: white;
+  padding: 30px;
+  border-radius: 8px;
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.consent-popup-content h3 {
+  margin-bottom: 20px;
+  color: #333;
+  text-align: center;
+}
+
+.consent-text {
+  margin-bottom: 20px;
+  line-height: 1.6;
+  color: #444;
+  white-space: pre-wrap;
+}
+
+.consent-popup-content button {
+  width: 100%;
+  margin-top: 20px;
+}

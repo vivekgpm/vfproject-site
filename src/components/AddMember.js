@@ -68,6 +68,9 @@ const AddMember = () => {
   const [bdaId, setBdaId] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [showConsentPopup, setShowConsentPopup] = useState(false);
+  const [consentContent, setConsentContent] = useState("");
+  const [isConsentChecked, setIsConsentChecked] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -158,6 +161,30 @@ const AddMember = () => {
     fetchPlans();
   }, []);
 
+  useEffect(() => {
+    const fetchConsentContent = async () => {
+      try {
+        const consentDoc = await getDoc(doc(db, "consentForm", "contentID"));
+        if (consentDoc.exists()) {
+          const data = consentDoc.data();
+          if (data && data.content) {
+            setConsentContent(data.content);
+          } else {
+            console.error("Consent content is empty or missing");
+            setConsentContent("No consent content available. Please contact administrator.");
+          }
+        } else {
+          console.error("Consent document does not exist");
+          setConsentContent("No consent content available. Please contact administrator.");
+        }
+      } catch (error) {
+        console.error("Error fetching consent content:", error);
+        setConsentContent("Error loading consent content. Please try again later.");
+      }
+    };
+    fetchConsentContent();
+  }, []);
+
   const handlePhoneChange = (e) => {
     const value = e.target.value.replace(/\D/g, "").slice(0, 10);
     setFormData((prev) => ({
@@ -171,6 +198,13 @@ const AddMember = () => {
       ...prev,
       referralId: user.bdaId || user.uid,
     }));
+  };
+
+  const handleConsentCheckbox = (e) => {
+    setIsConsentChecked(e.target.checked);
+    if (e.target.checked) {
+      setShowConsentPopup(true);
+    }
   };
 
   const handleCreateUser = async (e) => {
@@ -704,10 +738,39 @@ const AddMember = () => {
           </div>
 
           <div className="form-actions">
+            <div className="consent-section">
+              <label className="consent-checkbox">
+                <input
+                  type="checkbox"
+                  checked={isConsentChecked}
+                  onChange={handleConsentCheckbox}
+                  required
+                />
+                I agree to the terms and conditions
+              </label>
+            </div>
+
+            {showConsentPopup && (
+              <div className="consent-popup">
+                <div className="consent-popup-content">
+                  <h3>Terms and Conditions</h3>
+                  <div className="consent-text">
+                    {consentContent}
+                  </div>
+                  <button
+                    className="btn-primary"
+                    onClick={() => setShowConsentPopup(false)}
+                  >
+                    I Understand
+                  </button>
+                </div>
+              </div>
+            )}
+
             <button
               type="submit"
               className="btn-primary"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !isConsentChecked}
             >
               {isSubmitting ? (
                 <>

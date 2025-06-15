@@ -6,9 +6,20 @@ import {
   getDoc,
   updateDoc,
 } from "firebase/firestore";
-import { FaArrowLeft } from "react-icons/fa";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { getAllPlans } from "../api/planApi";
 import "../components/AppStyles.css";
-import { indianStates, countries } from "../utils/constants"; // Import constants
+import { indianStates, countries } from "../utils/constants";
+
+let db;
+let auth;
+
+try {
+  db = getFirestore();
+  auth = getAuth();
+} catch (error) {
+  console.error("Error initializing Firebase:", error);
+}
 
 const EditProfile = () => {
   const { userId } = useParams();
@@ -19,30 +30,58 @@ const EditProfile = () => {
     phone: "",
     address: "",
     city: "",
-    state: "Karnataka", // Default state
-    country: "India", // Default country
-    investmentPlanId: "", // Store plan ID if available
-    planAmount: 0, // Store plan amount
+    state: "Karnataka",
+    country: "India",
+    investmentPlanId: "",
+    planAmount: 0,
     referralId: "",
     bdaId: "",
-    paymentMode: "", // Added paymentMode
-    remarks: "", // Added remarks
-    memberPanCard: "", // Added member PAN
-    memberAadharCard: "", // Added member Aadhar
-    nomineeName: "", // Added nominee details
-    nomineeRelation: "Spouse", // Default nominee relation
-    nomineePanCard: "", // Added nominee PAN
-    nomineeAadharCard: "", // Added nominee Aadhar
-    accountNo: "", // Added bank details
+    paymentMode: "",
+    remarks: "",
+    memberPanCard: "",
+    memberAadharCard: "",
+    nomineeName: "",
+    nomineeRelation: "Other",
+    nomineeAadharCard: "",
+    accountNo: "",
     bankName: "",
     ifscCode: "",
     branchName: "",
-    investmentDate: "", // Added investment date
+    investmentDate: "",
+    dateOfBirth: "",
   });
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const db = getFirestore();
+  const [plans, setPlans] = useState([]);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setCurrentUser(user);
+        try {
+          const userDoc = await getDoc(doc(db, "users", user.uid));
+          if (userDoc.exists() && userDoc.data().role === "admin") {
+            setIsAdmin(true);
+          } else {
+            setIsAdmin(false);
+          }
+        } catch (error) {
+          console.error("Error checking admin status:", error);
+        }
+      } else {
+        setCurrentUser(null);
+        setIsAdmin(false);
+      }
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -50,7 +89,6 @@ const EditProfile = () => {
         const userDoc = await getDoc(doc(db, "users", userId));
         if (userDoc.exists()) {
           const userData = userDoc.data();
-          // Populate formData with all available user data
           setFormData({
             displayName: userData.displayName || "",
             email: userData.email || "",
@@ -68,14 +106,14 @@ const EditProfile = () => {
             memberPanCard: userData.memberPanCard || "",
             memberAadharCard: userData.memberAadharCard || "",
             nomineeName: userData.nomineeName || "",
-            nomineeRelation: userData.nomineeRelation || "Spouse",
-            nomineePanCard: userData.nomineePanCard || "",
+            nomineeRelation: userData.nomineeRelation || "Other",
             nomineeAadharCard: userData.nomineeAadharCard || "",
             accountNo: userData.accountNo || "",
             bankName: userData.bankName || "",
             ifscCode: userData.ifscCode || "",
             branchName: userData.branchName || "",
             investmentDate: userData.investmentDate || "",
+            dateOfBirth: userData.dateOfBirth || "",
           });
         } else {
           setErrorMessage("User not found");
@@ -83,19 +121,50 @@ const EditProfile = () => {
       } catch (error) {
         console.error("Error fetching user:", error);
         setErrorMessage("Error loading user data");
-      } finally {
-        setIsLoading(false);
       }
     };
 
     fetchUserData();
-  }, [db, userId]);
+  }, [userId]);
+
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const plansData = await getAllPlans();
+        setPlans(plansData);
+      } catch (error) {
+        console.error("Error fetching plans:", error);
+        setErrorMessage("Error loading investment plans");
+      }
+    };
+
+    fetchPlans();
+  }, []);
 
   const handleInputChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    const { name, value } = e.target;
+    if (
+      [
+        "displayName",
+        "city",
+        "bankName",
+        "branchName",
+        "nomineeName",
+        "memberPanCard",
+        "ifscCode",
+        "dateOfBirth",
+      ].includes(name)
+    ) {
+      setFormData({
+        ...formData,
+        [name]: value.toUpperCase(),
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value,
+      });
+    }
   };
 
   const handlePhoneChange = (e) => {
@@ -110,10 +179,10 @@ const EditProfile = () => {
     e.preventDefault();
     setErrorMessage("");
     setSuccessMessage("");
+    setIsSubmitting(true);
 
     try {
       const userRef = doc(db, "users", userId);
-      // Only update fields that are meant to be editable
       await updateDoc(userRef, {
         displayName: formData.displayName,
         phone: formData.phone,
@@ -121,55 +190,73 @@ const EditProfile = () => {
         city: formData.city,
         state: formData.state,
         country: formData.country,
-        planAmount: Number(formData.planAmount), // Ensure planAmount is a number
+        planAmount: Number(formData.planAmount),
         paymentMode: formData.paymentMode,
         remarks: formData.remarks,
         memberPanCard: formData.memberPanCard,
         memberAadharCard: formData.memberAadharCard,
         nomineeName: formData.nomineeName,
         nomineeRelation: formData.nomineeRelation,
-        nomineePanCard: formData.nomineePanCard,
         nomineeAadharCard: formData.nomineeAadharCard,
         accountNo: formData.accountNo,
         bankName: formData.bankName,
         ifscCode: formData.ifscCode,
         branchName: formData.branchName,
         investmentDate: formData.investmentDate,
-        // Do NOT update email, bdaId, referralId, investmentPlanId here
+        dateOfBirth: formData.dateOfBirth,
       });
-      setSuccessMessage("Profile updated successfully!");
 
-      // Navigate back after 2 seconds
+      setSuccessMessage("Profile updated successfully!");
+      setShowSuccessPopup(true);
+
       setTimeout(() => {
-        navigate("/admin/newmember"); // Assuming this navigates back to the members list
-      }, 2000);
+        setShowSuccessPopup(false);
+        navigate("/admin/newmember");
+      }, 3000);
     } catch (error) {
       console.error("Error updating profile:", error);
       setErrorMessage("Failed to update profile. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
   return (
-    <div className="add-member-container"> {/* Reusing class for consistent styling */}
+    <div className="add-member-container">
       <div className="form-header">
-        <h2>Edit Member Profile</h2>
+        <h2>Edit BDA Member Profile</h2>
         <Link to="/admin/newmember" className="back-button">
-          <FaArrowLeft /> Back to Members List
+          <i className="fas fa-arrow-left"></i> Back to Members List
         </Link>
       </div>
 
-      <div className="form-container"> {/* Reusing class for consistent styling */}
+      {showSuccessPopup && (
+        <div className="success-popup">
+          <div className="success-popup-content">
+            <i className="fas fa-check-circle"></i>
+            <div>
+              <h3>Success!</h3>
+              <p>Profile has been updated successfully.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="form-container">
         {errorMessage && <div className="error-message">{errorMessage}</div>}
-        {successMessage && <div className="success-message">{successMessage}</div>}
+        {successMessage && (
+          <div className="success-message">{successMessage}</div>
+        )}
 
-        <form onSubmit={handleSubmit} className="create-user-form"> {/* Reusing class for consistent styling */}
-
-          {/* Personal Information Section */}
+        <form onSubmit={handleSubmit} className="create-user-form">
+          {/* Personal Information */}
           <div className="form-section">
             <h3 className="section-title">Personal Information</h3>
-            <div className="form-row">
+            <div className="form-grid">
               <div className="form-group">
                 <label htmlFor="displayName">Full Name:</label>
                 <input
@@ -180,6 +267,7 @@ const EditProfile = () => {
                   onChange={handleInputChange}
                   required
                   placeholder="Enter full name"
+                  style={{ textTransform: "capitalize" }}
                 />
               </div>
               <div className="form-group">
@@ -197,9 +285,6 @@ const EditProfile = () => {
                   placeholder="10-digit mobile number"
                 />
               </div>
-            </div>
-
-            <div className="form-row">
               <div className="form-group">
                 <label htmlFor="email">Email Address:</label>
                 <input
@@ -207,22 +292,10 @@ const EditProfile = () => {
                   id="email"
                   name="email"
                   value={formData.email}
-                  disabled // Email is typically not editable
+                  disabled
+                  style={{ backgroundColor: "#f5f5f5", cursor: "not-allowed" }}
                 />
               </div>
-               <div className="form-group">
-                <label htmlFor="bdaId">BDA ID:</label>
-                <input
-                  type="text"
-                  id="bdaId"
-                  name="bdaId"
-                  value={formData.bdaId}
-                  disabled // BDA ID is not editable
-                />
-              </div>
-            </div>
-
-            <div className="form-row">
               <div className="form-group">
                 <label htmlFor="city">City:</label>
                 <input
@@ -233,9 +306,10 @@ const EditProfile = () => {
                   onChange={handleInputChange}
                   required
                   placeholder="Enter city name"
+                  style={{ textTransform: "capitalize" }}
                 />
               </div>
-               <div className="form-group">
+              <div className="form-group">
                 <label htmlFor="state">State:</label>
                 <select
                   id="state"
@@ -251,10 +325,7 @@ const EditProfile = () => {
                   ))}
                 </select>
               </div>
-            </div>
-
-             <div className="form-row">
-               <div className="form-group">
+              <div className="form-group">
                 <label htmlFor="country">Country:</label>
                 <select
                   id="country"
@@ -270,41 +341,41 @@ const EditProfile = () => {
                   ))}
                 </select>
               </div>
-               <div className="form-group">
-                <label htmlFor="referralId">Referral ID:</label>
-                 <input
-                  type="text"
-                  id="referralId"
-                  name="referralId"
-                  value={formData.referralId}
-                  disabled // Referral ID is not editable
-                />
-              </div>
             </div>
-
-
-            <div className="form-row full-width">
-              <div className="form-group">
-                <label htmlFor="address">Complete Address:</label>
-                <textarea
-                  id="address"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="Enter complete address"
-                  rows="3"
-                />
-              </div>
+            <div className="form-group-full">
+              <label htmlFor="address">Complete Address:</label>
+              <textarea
+                id="address"
+                name="address"
+                value={formData.address}
+                onChange={handleInputChange}
+                required
+                placeholder="Enter complete address"
+                rows="2"
+              />
             </div>
           </div>
 
-          {/* Member Identification Section */}
+          {/* Member Identification & Investment Details Combined */}
           <div className="form-section">
-            <h3 className="section-title">Member Identification</h3>
-            <div className="form-row">
+            <h3 className="section-title">
+              Member Identification & Investment
+            </h3>
+            <div className="form-grid">
+           
               <div className="form-group">
-                <label htmlFor="memberPanCard">Member PAN Card Number:</label>
+                <label htmlFor="dateOfBirth">Date of Birth:</label>
+                <input
+                  type="date"
+                  id="dateOfBirth"
+                  name="dateOfBirth"
+                  value={formData.dateOfBirth}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="memberPanCard">PAN Card Number:</label>
                 <input
                   type="text"
                   id="memberPanCard"
@@ -312,38 +383,36 @@ const EditProfile = () => {
                   value={formData.memberPanCard}
                   onChange={handleInputChange}
                   title="Enter valid PAN card number (e.g., ABCDE1234F)"
-                  placeholder="ABCDE1234F"
+                  placeholder="PAN Card"
+                  maxLength={10}
+                  style={{ textTransform: "capitalize" }}
+                  required
                 />
               </div>
               <div className="form-group">
-                <label htmlFor="memberAadharCard">Member Aadhar Card Number:</label>
+                <label htmlFor="memberAadharCard">Aadhar Card Number:</label>
                 <input
-                  type="text"
+                  type="number"
                   id="memberAadharCard"
                   name="memberAadharCard"
                   value={formData.memberAadharCard}
                   onChange={handleInputChange}
                   title="Enter valid 12-digit Aadhar number"
-                  placeholder="123456789012"
+                  placeholder="Aadhar Card"
+                  maxLength={12}
+                  required
                 />
               </div>
-            </div>
-          </div>
-
-          {/* Investment Details Section */}
-          <div className="form-section">
-            <h3 className="section-title">Investment Details</h3>
-            <div className="form-row">
               <div className="form-group">
                 <label htmlFor="planAmount">Investment Amount:</label>
                 <input
-                  type="number" // Changed to number type
+                  type="number"
                   id="planAmount"
                   name="planAmount"
                   value={formData.planAmount}
                   onChange={handleInputChange}
-                  required
-                  placeholder="Enter investment amount"
+                  style={{ backgroundColor: "#f5f5f5", cursor: "not-allowed" }}                 
+                  disabled
                 />
               </div>
               <div className="form-group">
@@ -355,14 +424,11 @@ const EditProfile = () => {
                   onChange={handleInputChange}
                   required
                 >
-                  <option value="">Select mode</option>
                   <option value="Online">Online</option>
                   <option value="Cheque">Cheque</option>
-                   <option value="Cash">Cash</option>
+                  <option value="Other">Other</option>
                 </select>
               </div>
-            </div>
-            <div className="form-row">
               <div className="form-group">
                 <label htmlFor="investmentDate">Investment Date:</label>
                 <input
@@ -374,95 +440,18 @@ const EditProfile = () => {
                   required
                 />
               </div>
-               <div className="form-group">
-                <label htmlFor="remarks">Additional Remarks:</label>
-                <textarea
-                  id="remarks"
-                  name="remarks"
-                  value={formData.remarks}
-                  onChange={handleInputChange}
-                  rows="2"
-                  placeholder="Additional notes or remarks"
-                />
-              </div>
+             
             </div>
-          </div>
-
-          {/* Nominee Section */}
-          <div className="form-section nominee-section">
-            <h3 className="section-title">Nominee Details</h3>
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="nomineeName">Nominee Name:</label>
-                <input
-                  type="text"
-                  id="nomineeName"
-                  name="nomineeName"
-                  value={formData.nomineeName}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="Enter nominee's name"
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="nomineeRelation">Relationship:</label>
-                <select
-                  id="nomineeRelation"
-                  name="nomineeRelation"
-                  value={formData.nomineeRelation}
-                  onChange={handleInputChange}
-                  required
-                >
-                  <option value="Spouse">Spouse</option>
-                  <option value="Child">Child</option>
-                  <option value="Parent">Parent</option>
-                  <option value="Sibling">Sibling</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="nomineePanCard">Nominee PAN Card Number:</label>
-                <input
-                  type="text"
-                  id="nomineePanCard"
-                  name="nomineePanCard"
-                  value={formData.nomineePanCard}
-                  onChange={handleInputChange}
-                  title="Enter valid PAN card number (e.g., ABCDE1234F)"
-                  placeholder="ABCDE1234F"
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="nomineeAadharCard">Nominee Aadhar Card Number:</label>
-                <input
-                  type="text"
-                  id="nomineeAadharCard"
-                  name="nomineeAadharCard"
-                  value={formData.nomineeAadharCard}
-                  onChange={handleInputChange}
-                  title="Enter valid 12-digit Aadhar number"
-                  placeholder="123456789012"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Bank Details Section */}
-          <div className="form-section bank-section">
-            <h3 className="section-title">Bank Details</h3>
-            <div className="form-row">
+            <div className="form-grid">
               <div className="form-group">
                 <label htmlFor="accountNo">Account Number:</label>
                 <input
-                  type="text"
+                  type="number"
                   id="accountNo"
                   name="accountNo"
                   value={formData.accountNo}
                   onChange={handleInputChange}
-                  placeholder="Enter account number"
+                 
                 />
               </div>
               <div className="form-group">
@@ -473,20 +462,20 @@ const EditProfile = () => {
                   name="bankName"
                   value={formData.bankName}
                   onChange={handleInputChange}
+                  required
                   placeholder="Enter bank name"
+                  style={{ textTransform: "capitalize" }}
                 />
               </div>
-            </div>
-
-            <div className="form-row">
               <div className="form-group">
-                <label htmlFor="ifscCode">IFSC Code:</label>{" "}
+                <label htmlFor="ifscCode">IFSC Code:</label>
                 <input
                   type="text"
                   id="ifscCode"
                   name="ifscCode"
                   value={formData.ifscCode}
                   onChange={handleInputChange}
+                  required
                   placeholder="Enter IFSC code"
                 />
               </div>
@@ -498,16 +487,94 @@ const EditProfile = () => {
                   name="branchName"
                   value={formData.branchName}
                   onChange={handleInputChange}
+                  required
                   placeholder="Enter branch name"
+                  style={{ textTransform: "capitalize" }}
+                />
+              </div>
+            </div>
+            <div className="form-group-full">
+              <label htmlFor="remarks">Additional Remarks:</label>
+              <textarea
+                id="remarks"
+                name="remarks"
+                value={formData.remarks}
+                onChange={handleInputChange}
+                rows="2"
+                placeholder="Additional notes or remarks"
+              />
+            </div>
+          </div>
+
+          {/* Nominee & Bank Details Combined */}
+          <div className="form-section">
+            <h3 className="section-title">Nominee Details</h3>
+            <div className="form-grid">
+              <div className="form-group">
+                <label htmlFor="nomineeName">Nominee Name:</label>
+                <input
+                  type="text"
+                  id="nomineeName"
+                  name="nomineeName"
+                  value={formData.nomineeName}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="Enter nominee's name"
+                  style={{ textTransform: "capitalize" }}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="nomineeRelation">Relationship:</label>
+                <select
+                  id="nomineeRelation"
+                  name="nomineeRelation"
+                  value={formData.nomineeRelation}
+                  onChange={handleInputChange}
+                  required
+                >
+                  <option value="Wife">Wife</option>
+                  <option value="Husband">Husband</option>
+                  <option value="Son">Son</option>
+                  <option value="Daughter">Daughter</option>
+                  <option value="Father">Father</option>
+                  <option value="Mother">Mother</option>
+                  <option value="Sister">Sister</option>
+                  <option value="Brother">Brother</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label htmlFor="nomineeAadharCard">
+                  Nominee Aadhar Number:
+                </label>
+                <input
+                  type="number"
+                  id="nomineeAadharCard"
+                  name="nomineeAadharCard"
+                  value={formData.nomineeAadharCard}
+                  onChange={handleInputChange}
+                  title="Enter valid 12-digit Aadhar number"
+                  placeholder="Nominee Aadhar"
+                  maxLength={12}
+                  required
                 />
               </div>
             </div>
           </div>
 
-
           <div className="form-actions">
-            <button type="submit" className="btn-primary">
-              Update Profile
+            <button
+              type="submit"
+              className="btn-primary"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <i className="fas fa-spinner fa-spin"></i> Updating Profile...
+                </>
+              ) : (
+                "Update Profile"
+              )}
             </button>
           </div>
         </form>

@@ -143,34 +143,48 @@ function AdminUserManagement() {
   const formatDate = (timestamp) => {
     if (!timestamp) return "N/A";
 
+    let date;
     try {
-      // Check if it's a Firestore Timestamp with toDate method
       if (timestamp.toDate && typeof timestamp.toDate === "function") {
-        return timestamp.toDate().toLocaleString();
-      }
-
-      // Check if it's a Firestore timestamp object with _seconds property
-      if (timestamp._seconds) {
-        return new Date(timestamp._seconds * 1000).toLocaleString();
-      }
-
-      // Check if it's a regular timestamp object with seconds property
-      if (timestamp.seconds) {
-        return new Date(timestamp.seconds * 1000).toLocaleString();
-      }
-
-      // If it's a number (Unix timestamp)
-      if (typeof timestamp === "number") {
-        // Check if it's in seconds or milliseconds
-        const date =
+        date = timestamp.toDate();
+      } else if (timestamp._seconds) {
+        date = new Date(timestamp._seconds * 1000);
+      } else if (timestamp.seconds) {
+        date = new Date(timestamp.seconds * 1000);
+      } else if (typeof timestamp === "number") {
+        date =
           timestamp > 1000000000000
             ? new Date(timestamp)
             : new Date(timestamp * 1000);
-        return date.toLocaleString();
+      } else {
+        date = new Date(timestamp);
       }
 
-      // If it's already a Date object or string
-      return new Date(timestamp).toLocaleString();
+      if (isNaN(date.getTime())) {
+        // Invalid date check
+        throw new Error("Invalid Date object created");
+      }
+
+      const optionsDate = {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        timeZone: 'Asia/Kolkata', // Set timezone to IST
+      };
+
+      const optionsTime = {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true, // For AM/PM
+        timeZone: 'Asia/Kolkata', // Set timezone to IST
+      };
+
+      // Format date and time parts separately to achieve "DD Mon YYYY HH:MM:SS AM/PM"
+      const formattedDate = new Intl.DateTimeFormat('en-GB', optionsDate).format(date).replace(/ /g, '-'); // Added replace to get DD-MMM-YYYY
+      const formattedTime = new Intl.DateTimeFormat('en-US', optionsTime).format(date);
+
+      return `${formattedDate} ${formattedTime}`;
     } catch (error) {
       console.error("Error formatting date:", error, timestamp);
       return "Invalid Date";
@@ -263,7 +277,7 @@ function AdminUserManagement() {
       "City", //
       "State",
       "Invested Date",
-      "Investment Amount",      
+      "Investment Amount",
       "Date of Birth",
       "Remarks",
       "Aadhaar",
@@ -278,29 +292,65 @@ function AdminUserManagement() {
       "Nominee Aadhar",
     ];
 
+    const formatDateOnly = (timestamp) => {
+      if (!timestamp) return "N/A";
+
+      let date;
+      try {
+        if (timestamp.toDate && typeof timestamp.toDate === "function") {
+          date = timestamp.toDate();
+        } else if (timestamp._seconds) {
+          date = new Date(timestamp._seconds * 1000);
+        } else if (timestamp.seconds) {
+          date = new Date(timestamp.seconds * 1000);
+        } else if (typeof timestamp === "number") {
+          date = timestamp > 1000000000000 ? new Date(timestamp) : new Date(timestamp * 1000);
+        } else {
+          date = new Date(timestamp);
+        }
+
+        if (isNaN(date.getTime())) { 
+          throw new Error("Invalid Date object created");
+        }
+
+        const options = {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+          timeZone: 'Asia/Kolkata',
+        };
+
+        return new Intl.DateTimeFormat('en-GB', options).format(date).replace(/ /g, '-');
+
+      } catch (error) {
+        console.error("Error formatting date for export:", error, timestamp);
+        return "Invalid Date";
+      }
+    };
+
     const rows = filteredUsers.map((user) => [
       `"${user.investmentPlanName || "N/A"}"`,
-      `"${user.bdaId || "N/A"}"`, // BDA ID
+      `"${user.bdaId || "N/A"}"`,
       `"${user.displayName || "N/A"}"`,
       `"${user.referralId || "N/A"}"`,
       `"${user.phone || "N/A"}"`,
       `"${user.email || "N/A"}"`,
       `"${user.city || "user"}"`,
       `"${user.state || "user"}"`,
-      `"${formatDate(user.investmentDate || "N/A")}"`, // Created On// City // Email// Phone // User ID // Name (DisplayName or Email)   // Investment Plan (Name)
-      `"${(user.planAmount || 0).toLocaleString("en-IN")}"`, // Investment Plan (Amount)
+      `"${formatDateOnly(user.investmentDate || "N/A")}"`, // Changed to formatDateOnly
+      `"${(user.planAmount || 0).toLocaleString("en-IN")}"`,
       `"${user.dateOfBirth || "N/A"}"`,
       `"${user.remarks || "N/A"}"`,
-      `"${user.memberPanCard || "N/A"}"`, // Pancard
-      `"${user.memberAadharCard || "N/A"}"`, // Aadhaar
-      `"${user.bankName || "N/A"}"`, // Bank Name
-      `"${user.accountNo || "N/A"}"`, // Account Number
-      `"${user.ifscCode || "N/A"}"`, // IFSC Code
-      `"${user.branchName || "N/A"}"`, // Branch
-      `"${user.address || "N/A"}"`, // Bank Name
-      `"${user.nomineeName || "N/A"}"`, // Nominee Name
-      `"${user.nomineeRelation || "N/A"}"`, // Nominee Relation
-      `"${user.nomineeAadharCard || "N/A"}"`, // Aadhaar
+      `"${user.memberAadharCard || "N/A"}"`,
+      `"${user.memberPanCard || "N/A"}"`,      
+      `"${user.bankName || "N/A"}"`,
+      `"${user.accountNo || "N/A"}"`,
+      `"${user.ifscCode || "N/A"}"`,
+      `"${user.branchName || "N/A"}"`,
+      `"${user.address || "N/A"}"`,
+      `"${user.nomineeName || "N/A"}"`,
+      `"${user.nomineeRelation || "N/A"}"`,
+      `"${user.nomineeAadharCard || "N/A"}"`,
     ]);
 
     // Combine headers and rows

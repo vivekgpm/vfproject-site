@@ -194,7 +194,7 @@ const AdminHome = () => {
 
   return (
     <div className="admin-home">
-      <h2>Admin Dashboard</h2>
+      <h2>Admin Home</h2>
 
       <div className="admin-stats">
         <div className="stat-card">
