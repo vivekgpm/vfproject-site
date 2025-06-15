@@ -19,10 +19,8 @@ import UserSearchSelect from "./UserSearchSelect";
 import "../components/AppStyles.css";
 import { indianStates, countries } from "../utils/constants";
 
-// Get API URL from environment variable or use default
-const EXP_API_URL = process.env.REACT_APP_API_URL_3 || "http://localhost:3001"; // Fallback to localhost if not set
+const EXP_API_URL = process.env.REACT_APP_API_URL_3 || "http://localhost:3001";
 
-// Initialize Firebase services
 let db;
 let auth;
 
@@ -45,23 +43,19 @@ const AddMember = () => {
     investmentPlan: "",
     referralId: "",
     role: "user",
-    password: "Complex123!", // Default password
-    paymentMode: "Online", // Default payment mode
-    remarks: "", // New field for remarks
-    // Member details
-    memberPanCard: "", // New field for member's PAN Card
-    memberAadharCard: "", // New field for member's Aadhar Card
-    // Nominee details
+    password: "Complex123!",
+    paymentMode: "Online",
+    remarks: "",
+    memberPanCard: "",
+    memberAadharCard: "",
     nomineeName: "",
     nomineeRelation: "Spouse",
-    nomineePanCard: "", // Nominee's PAN Card (existing)
-    nomineeAadharCard: "", // Nominee's Aadhar Card (existing)
-    // Bank details
+    nomineeAadharCard: "",
     accountNo: "",
     bankName: "",
     ifscCode: "",
     branchName: "",
-    investmentDate: "", // Added investmentDate
+    investmentDate: "",
   });
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -75,17 +69,34 @@ const AddMember = () => {
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
   const handleInputChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    const { name, value } = e.target;
+    if (
+      [
+        "displayName",
+        "city",
+        "bankName",
+        "branchName",
+        "nomineeName",
+        "memberPanCard",
+        "ifscCode",
+      ].includes(name)
+    ) {
+      setFormData({
+        ...formData,
+        [name]: value.toUpperCase(),
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value,
+      });
+    }
   };
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setCurrentUser(user);
-
-        // Check admin status from Firestore
         try {
           const userDoc = await getDoc(doc(db, "users", user.uid));
           if (userDoc.exists() && userDoc.data().role === "admin") {
@@ -104,10 +115,10 @@ const AddMember = () => {
     });
 
     return () => unsubscribe();
-  }, []); // Removed auth and db from dependencies since they're initialized outside
+  }, []);
+
   const generateBdaId = useCallback(async () => {
     try {
-      // Get the last BDA ID from the database
       const usersRef = collection(db, "users");
       const q = query(usersRef, orderBy("bdaId", "desc"), limit(1));
       const querySnapshot = await getDocs(q);
@@ -119,14 +130,13 @@ const AddMember = () => {
         newNumber = lastNumber + 1;
       }
 
-      // Format the new BDA ID
       const newBdaId = `BDA${newNumber.toString().padStart(4, "0")}`;
       setBdaId(newBdaId);
     } catch (error) {
       console.error("Error generating BDA ID:", error);
       setErrorMessage("Error generating BDA ID");
     }
-  }, []); // Removed db from dependencies since it's initialized outside
+  }, []);
 
   useEffect(() => {
     generateBdaId();
@@ -157,7 +167,7 @@ const AddMember = () => {
   const handleReferralSelect = (user) => {
     setFormData((prev) => ({
       ...prev,
-      referralId: user.uid || user.id,
+      referralId: user.bdaId || user.uid,
     }));
   };
 
@@ -174,13 +184,9 @@ const AddMember = () => {
     }
 
     try {
-      // Store admin's current session info
       const adminUid = currentUser.uid;
-
-      // Get fresh ID token
       const idToken = await currentUser.getIdToken(true);
 
-      // Check if email already exists in Firestore
       const usersRef = collection(db, "users");
       const q = query(usersRef, where("email", "==", formData.email));
       const querySnapshot = await getDocs(q);
@@ -195,10 +201,9 @@ const AddMember = () => {
       const selectedPlan = plans.find((p) => p.id === formData.investmentPlan);
       const planAmount = selectedPlan ? selectedPlan.amount : 0;
 
-      // Make API call with proper authentication
       const response = await fetch(`${EXP_API_URL}/api/users`, {
         method: "POST",
-        credentials: "include", // Important for requests with cookies
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${idToken}`,
@@ -218,27 +223,22 @@ const AddMember = () => {
           referralId: formData.referralId || null,
           paymentMode: formData.paymentMode,
           remarks: formData.remarks,
-          // Member's PAN and Aadhar
           memberPanCard: formData.memberPanCard,
           memberAadharCard: formData.memberAadharCard,
-          // Nominee details
           nomineeName: formData.nomineeName,
           nomineeRelation: formData.nomineeRelation,
-          nomineePanCard: formData.nomineePanCard, // Nominee's PAN
-          nomineeAadharCard: formData.nomineeAadharCard, // Nominee's Aadhar
-          // Bank details
+          nomineeAadharCard: formData.nomineeAadharCard,
           accountNo: formData.accountNo,
           bankName: formData.bankName,
           ifscCode: formData.ifscCode,
           branchName: formData.branchName,
           investmentDate: formData.investmentDate,
-          userData: { // This userData object seems redundant if all fields are sent directly
+          userData: {
             ...formData,
             bdaId,
             investmentPlan: planAmount,
-            uid: null, // Will be set by the API
+            uid: null,
             role: "user",
-            // Ensure new fields are included here too if the API primarily uses userData
             memberPanCard: formData.memberPanCard,
             memberAadharCard: formData.memberAadharCard,
           },
@@ -252,10 +252,8 @@ const AddMember = () => {
 
       const responseData = await response.json();
 
-      // Handle referral bonus if user was created successfully and has a referrer
       if (responseData.uid && formData.referralId) {
         try {
-          // Get referrer's data using UID
           const referrerDoc = await getDoc(
             doc(db, "users", formData.referralId)
           );
@@ -270,7 +268,6 @@ const AddMember = () => {
               const referralBonus =
                 (planAmount * referrerPlan.referralPercentage) / 100;
 
-              // Create referral bonus transaction
               await addDoc(collection(db, "transactions"), {
                 userId: referrerData.bdaId,
                 type: "Referral",
@@ -295,7 +292,7 @@ const AddMember = () => {
       }
 
       setSuccessMessage("Member added successfully!");
-      setShowSuccessPopup(true); // Reset form
+      setShowSuccessPopup(true);
       setFormData({
         email: "",
         displayName: "",
@@ -308,25 +305,22 @@ const AddMember = () => {
         referralId: "",
         role: "user",
         password: "Complex123!",
-        paymentMode: "Cash",
+        paymentMode: "Online",
         remarks: "",
         investmentDate: "",
-        memberPanCard: "", // Reset new fields
-        memberAadharCard: "", // Reset new fields
-        nomineeName: "", // Reset nominee fields
+        memberPanCard: "",
+        memberAadharCard: "",
+        nomineeName: "",
         nomineeRelation: "Spouse",
-        nomineePanCard: "",
         nomineeAadharCard: "",
-        accountNo: "", // Reset bank fields
+        accountNo: "",
         bankName: "",
         ifscCode: "",
         branchName: "",
       });
 
-      // Generate new BDA ID for next user
       await generateBdaId();
 
-      // Close popup after 3 seconds and navigate
       setTimeout(() => {
         setShowSuccessPopup(false);
         navigate("/admin/newmember");
@@ -334,7 +328,6 @@ const AddMember = () => {
     } catch (error) {
       console.error("Error adding member:", error);
 
-      // Handle specific errors
       if (error.message.includes("email-already-in-use")) {
         setErrorMessage(
           "This email address is already registered. Please use a different email."
@@ -387,10 +380,10 @@ const AddMember = () => {
         )}
 
         <form onSubmit={handleCreateUser} className="create-user-form">
-          {/* Personal Information Section */}
+          {/* Personal Information */}
           <div className="form-section">
             <h3 className="section-title">Personal Information</h3>
-            <div className="form-row">
+            <div className="form-grid">
               <div className="form-group">
                 <label htmlFor="displayName">Full Name:</label>
                 <input
@@ -401,6 +394,7 @@ const AddMember = () => {
                   onChange={handleInputChange}
                   required
                   placeholder="Enter full name"
+                  style={{ textTransform: "capitalize" }}
                 />
               </div>
               <div className="form-group">
@@ -418,9 +412,6 @@ const AddMember = () => {
                   placeholder="10-digit mobile number"
                 />
               </div>
-            </div>
-
-            <div className="form-row">
               <div className="form-group">
                 <label htmlFor="email">Email Address:</label>
                 <input
@@ -443,11 +434,9 @@ const AddMember = () => {
                   onChange={handleInputChange}
                   required
                   placeholder="Enter city name"
+                  style={{ textTransform: "capitalize" }}
                 />
               </div>
-            </div>
-
-            <div className="form-row">
               <div className="form-group">
                 <label htmlFor="state">State:</label>
                 <select
@@ -481,62 +470,55 @@ const AddMember = () => {
                 </select>
               </div>
             </div>
-
-            <div className="form-row full-width">
-              <div className="form-group">
-                <label htmlFor="address">Complete Address:</label>
-                <textarea
-                  id="address"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="Enter complete address"
-                  rows="3"
-                />
-              </div>
+            <div className="form-group-full">
+              <label htmlFor="address">Complete Address:</label>
+              <textarea
+                id="address"
+                name="address"
+                value={formData.address}
+                onChange={handleInputChange}
+                required
+                placeholder="Enter complete address"
+                rows="2"
+              />
             </div>
           </div>
 
-          {/* Member Identification Section (New Section) */}
+          {/* Member Identification & Investment Details Combined */}
           <div className="form-section">
-            <h3 className="section-title">Member Identification</h3>
-            <div className="form-row">
+            <h3 className="section-title">
+              Member Identification & Investment
+            </h3>
+            <div className="form-grid">
               <div className="form-group">
-                <label htmlFor="memberPanCard">Member PAN Card Number:</label>
+                <label htmlFor="memberPanCard">PAN Card Number:</label>
                 <input
                   type="text"
                   id="memberPanCard"
                   name="memberPanCard"
                   value={formData.memberPanCard}
                   onChange={handleInputChange}
-                  // pattern="[A-Z]{5}[0-9]{4}[A-Z]{1}" // Optional pattern validation
                   title="Enter valid PAN card number (e.g., ABCDE1234F)"
-                  placeholder="ABCDE1234F"
+                  placeholder="PAN Card"
+                  maxLength={10}
+                  style={{ textTransform: "capitalize" }}
+                  required
                 />
               </div>
               <div className="form-group">
-                <label htmlFor="memberAadharCard">Member Aadhar Card Number:</label>
+                <label htmlFor="memberAadharCard">Aadhar Card Number:</label>
                 <input
-                  type="text"
+                  type="number"
                   id="memberAadharCard"
                   name="memberAadharCard"
                   value={formData.memberAadharCard}
                   onChange={handleInputChange}
-                  // pattern="[0-9]{12}" // Optional pattern validation
                   title="Enter valid 12-digit Aadhar number"
-                  placeholder="123456789012"
+                  placeholder="Aadhar Card"
+                  maxLength={12}
+                  required
                 />
               </div>
-            </div>
-          </div>
-
-
-          {/* Investment Details Section */}
-          <div className="form-section">
-
-            <h3 className="section-title">Investment Details</h3>
-            <div className="form-row">
               <div className="form-group">
                 <label htmlFor="investmentPlan">Investment Plan:</label>
                 <select
@@ -567,8 +549,6 @@ const AddMember = () => {
                   <option value="Cheque">Cheque</option>
                 </select>
               </div>
-            </div>
-            <div className="form-row">
               <div className="form-group">
                 <label htmlFor="investmentDate">Investment Date:</label>
                 <input
@@ -580,29 +560,80 @@ const AddMember = () => {
                   required
                 />
               </div>
-
               <div className="form-group">
                 <label>Referral ID:</label>
                 <UserSearchSelect onUserSelect={handleReferralSelect} />
               </div>
+            </div>
+            <div className="form-grid">
               <div className="form-group">
-                <label htmlFor="remarks">Additional Remarks:</label>
-                <textarea
-                  id="remarks"
-                  name="remarks"
-                  value={formData.remarks}
+                <label htmlFor="accountNo">Account Number:</label>
+                <input
+                  type="number"
+                  id="accountNo"
+                  name="accountNo"
+                  value={formData.accountNo}
                   onChange={handleInputChange}
-                  rows="2"
-                  placeholder="Additional notes or remarks"
+                  required
+                  placeholder="Enter account number"
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="bankName">Bank Name:</label>
+                <input
+                  type="text"
+                  id="bankName"
+                  name="bankName"
+                  value={formData.bankName}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="Enter bank name"
+                  style={{ textTransform: "capitalize" }}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="ifscCode">IFSC Code:</label>
+                <input
+                  type="text"
+                  id="ifscCode"
+                  name="ifscCode"
+                  value={formData.ifscCode}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="Enter IFSC code"
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="branchName">Branch Name:</label>
+                <input
+                  type="text"
+                  id="branchName"
+                  name="branchName"
+                  value={formData.branchName}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="Enter branch name"
+                  style={{ textTransform: "capitalize" }}
                 />
               </div>
             </div>
+            <div className="form-group-full">
+              <label htmlFor="remarks">Additional Remarks:</label>
+              <textarea
+                id="remarks"
+                name="remarks"
+                value={formData.remarks}
+                onChange={handleInputChange}
+                rows="2"
+                placeholder="Additional notes or remarks"
+              />
+            </div>
           </div>
 
-          {/* Nominee Section */}
-          <div className="form-section nominee-section">
-            <h3 className="section-title">Nominee Details</h3>
-            <div className="form-row">
+          {/* Nominee & Bank Details Combined */}
+          <div className="form-section">
+            <h3 className="section-title">Nominee & Bank Details</h3>
+            <div className="form-grid">
               <div className="form-group">
                 <label htmlFor="nomineeName">Nominee Name:</label>
                 <input
@@ -613,6 +644,7 @@ const AddMember = () => {
                   onChange={handleInputChange}
                   required
                   placeholder="Enter nominee's name"
+                  style={{ textTransform: "capitalize" }}
                 />
               </div>
               <div className="form-group">
@@ -631,93 +663,20 @@ const AddMember = () => {
                   <option value="Other">Other</option>
                 </select>
               </div>
-            </div>
-
-            <div className="form-row">
               <div className="form-group">
-                <label htmlFor="panCard">Nominee PAN Card Number:</label>
+                <label htmlFor="nomineeAadharCard">
+                  Nominee Aadhar Number:
+                </label>
                 <input
-                  type="text"
-                  id="nomineePanCard"
-                  name="nomineePanCard"
-                  value={formData.nomineePanCard}
-                  onChange={handleInputChange}
-                 // pattern="[A-Z]{5}[0-9]{4}[A-Z]{1}"
-                  title="Enter valid PAN card number (e.g., ABCDE1234F)"
-
-                  placeholder="ABCDE1234F"
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="aadharCard">Nominee Aadhar Card Number:</label>
-                <input
-                  type="text"
+                  type="number"
                   id="nomineeAadharCard"
                   name="nomineeAadharCard"
                   value={formData.nomineeAadharCard}
                   onChange={handleInputChange}
-                 // pattern="[0-9]{12}"
                   title="Enter valid 12-digit Aadhar number"
-
-                  placeholder="123456789012"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Bank Details Section */}
-          <div className="form-section bank-section">
-            <h3 className="section-title">Bank Details</h3>
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="accountNo">Account Number:</label>
-                <input
-                  type="text"
-                  id="accountNo"
-                  name="accountNo"
-                  value={formData.accountNo}
-                  onChange={handleInputChange}
-
-                  placeholder="Enter account number"
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="bankName">Bank Name:</label>
-                <input
-                  type="text"
-                  id="bankName"
-                  name="bankName"
-                  value={formData.bankName}
-                  onChange={handleInputChange}
-
-                  placeholder="Enter bank name"
-                />
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="ifscCode">IFSC Code:</label>{" "}
-                <input
-                  type="text"
-                  id="ifscCode"
-                  name="ifscCode"
-                  value={formData.ifscCode}
-                  onChange={handleInputChange}
-
-                  placeholder="Enter IFSC code"
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="branchName">Branch Name:</label>
-                <input
-                  type="text"
-                  id="branchName"
-                  name="branchName"
-                  value={formData.branchName}
-                  onChange={handleInputChange}
-
-                  placeholder="Enter branch name"
+                  placeholder="Nominee Aadhar"
+                  maxLength={12}
+                  required
                 />
               </div>
             </div>

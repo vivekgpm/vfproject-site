@@ -8,6 +8,7 @@ import "../components/AppStyles.css"; // Import the centralized CSS file
 const AdminHome = () => {
   const [transactions, setTransactions] = useState([]);
   const [users, setUsers] = useState([]);
+  const [userMap, setUserMap] = useState({}); // New state for userId to displayName mapping
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -20,6 +21,23 @@ const AdminHome = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Fetch users first
+        const usersRef = collection(db, "users");
+        const usersSnapshot = await getDocs(usersRef);
+        const usersData = usersSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setUsers(usersData);
+
+        // Create userId to displayName mapping
+        const userMapping = {};
+        usersData.forEach((user) => {
+          userMapping[user.bdaId] =
+            user.displayName || user.name || user.email || "Unknown User";
+        });
+        setUserMap(userMapping);
+
         // Fetch transactions
         const transactionsRef = collection(db, "transactions");
         const transactionQuery = query(
@@ -33,15 +51,6 @@ const AdminHome = () => {
         }));
         setTransactions(transactionsData);
         setFilteredTransactions(transactionsData);
-
-        // Fetch users for investment calculations
-        const usersRef = collection(db, "users");
-        const usersSnapshot = await getDocs(usersRef);
-        const usersData = usersSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setUsers(usersData);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -55,13 +64,17 @@ const AdminHome = () => {
   useEffect(() => {
     let filtered = [...transactions];
 
-    // Apply search filter
+    // Apply search filter - now search includes mapped display names
     if (searchTerm) {
-      filtered = filtered.filter(
-        (t) =>
+      filtered = filtered.filter((t) => {
+        const displayName = userMap[t.userId] || "";
+        return (
+          displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
           t.userDisplayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          t.projectName?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+          t.projectName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          t.userId?.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      });
     }
 
     // Apply date range filter
@@ -89,7 +102,12 @@ const AdminHome = () => {
     }
     setFilteredTransactions(filtered);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [searchTerm, startDate, endDate, transactions, showLastDayOnly]);
+  }, [searchTerm, startDate, endDate, transactions, showLastDayOnly, userMap]);
+
+  // Helper function to get display name
+  const getUserDisplayName = (userId) => {
+    return userMap[userId] || userId || "N/A";
+  };
 
   // Calculations
   const totalTransactions = filteredTransactions.length;
@@ -114,6 +132,7 @@ const AdminHome = () => {
   );
 
   if (loading) return <div>Loading...</div>;
+
   const formatDate = (timestamp) => {
     if (!timestamp) return "N/A";
     // Check if it's a Firestore Timestamp
@@ -127,12 +146,57 @@ const AdminHome = () => {
     // If it's already a Date object or string
     return new Date(timestamp).toLocaleString();
   };
+
+  const exportTransactionsToCSV = () => {
+    if (filteredTransactions.length === 0) {
+      alert("No transactions to export.");
+      return;
+    }
+
+    const headers = [
+      "Transaction Date",
+      "Member Name",
+      "Type",
+      "Amount",
+      "Payment Date",
+      "Status",
+      "Transaction ID", // Include ID for reference
+    ];
+
+    const rows = filteredTransactions.map((t) => [
+      `"${formatDate(t.createdAt)}"`, // Wrap in quotes to handle commas
+      `"${getUserDisplayName(t.userId)}"`, // Use the mapped display name
+      `"${t.type === "assetPurchase" ? "Asset Purchase" : t.type || "N/A"}"`,
+      `"${t.amount?.toLocaleString("en-IN") || "0"}"`,
+      `"${t.paymentDate ? new Date(t.paymentDate).toLocaleDateString() : "-"}"`,
+      `"${t.status || "Pending"}"`,
+      `"${t.id}"`,
+    ]);
+
+    // Combine headers and rows
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) => row.join(",")),
+    ].join("\n");
+
+    // Create a Blob and download link
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+
+    link.setAttribute("href", url);
+    link.setAttribute("download", "transactions_export.csv");
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="admin-home">
       <h2>Admin Dashboard</h2>
 
       <div className="admin-stats">
-        
         <div className="stat-card">
           <h3>Total Transactions</h3>
           <p>{totalTransactions}</p>
@@ -194,6 +258,9 @@ const AdminHome = () => {
         <Link to="/admin/manage-asset-transactions" className="admin-button">
           Manage Asset Purchase
         </Link>
+        <Link onClick={exportTransactionsToCSV} className="admin-button">
+          Export Transactions (CSV)
+        </Link>
       </div>
 
       <h3>Recent Transactions</h3>
@@ -214,7 +281,7 @@ const AdminHome = () => {
             {paginatedTransactions.map((transaction) => (
               <tr key={transaction.id}>
                 <td>{formatDate(transaction.createdAt)}</td>
-                <td>{transaction.userId || "N/A"}</td>
+                <td>{getUserDisplayName(transaction.userId)}</td>
                 <td>
                   {transaction.type === "assetPurchase"
                     ? "Asset Purchase"

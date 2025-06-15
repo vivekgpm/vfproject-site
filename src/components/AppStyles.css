@@ -568,7 +568,6 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
   margin-top: 1rem;
 }
 
@@ -3276,5 +3275,535 @@ body {
   }
   100% {
     transform: rotate(360deg);
+  }
+}
+
+.users-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap; /* Added for responsiveness */
+  gap: 15px; /* Spacing between elements */
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 8px 12px;
+  background-color: #fff;
+  flex-grow: 1; /* Allows search box to take available space */
+  max-width: 300px; /* Limit search box width */
+}
+
+.search-box input {
+  border: none;
+  outline: none;
+  margin-left: 10px;
+  flex-grow: 1;
+}
+
+.investment-plan-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.investment-plan-filter label {
+  font-weight: bold;
+}
+
+.investment-plan-filter select {
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: #fff;
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background-color: #5a6268;
+}
+
+/* Add these optimized styles to your AppStyles.css */
+
+.add-member-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 12px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+.form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid #e1e5e9;
+}
+
+.form-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.back-button {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  background-color: #f8f9fa;
+  color: #495057;
+  text-decoration: none;
+  border-radius: 4px;
+  font-size: 13px;
+  transition: background-color 0.2s;
+}
+
+.back-button:hover {
+  background-color: #e9ecef;
+}
+
+.back-button i {
+  margin-right: 6px;
+}
+
+.form-container {
+  background: #ffffff;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+}
+
+.create-user-form {
+  margin: 0;
+}
+
+.form-section {
+  margin-bottom: 24px;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 16px;
+  background-color: #fafbfc;
+}
+
+.form-section:last-of-type {
+  margin-bottom: 16px;
+}
+
+.section-title {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #2c3e50;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #dee2e6;
+}
+
+/* Grid Layout for Form Fields */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px 16px;
+  margin-bottom: 12px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group-full {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 12px;
+}
+
+.form-group label,
+.form-group-full label {
+  font-weight: 500;
+  margin-bottom: 4px;
+  color: #374151;
+  font-size: 13px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea,
+.form-group-full input,
+.form-group-full select,
+.form-group-full textarea {
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background-color: #ffffff;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus,
+.form-group-full input:focus,
+.form-group-full select:focus,
+.form-group-full textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-group textarea,
+.form-group-full textarea {
+  resize: vertical;
+  min-height: 42px;
+}
+
+/* Success and Error Messages */
+.success-message,
+.error-message {
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.success-message {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.error-message {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+/* Success Popup */
+.success-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.success-popup-content {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 400px;
+  margin: 20px;
+}
+
+.success-popup-content i {
+  font-size: 24px;
+  color: #10b981;
+}
+
+.success-popup-content h3 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  color: #111827;
+}
+
+.success-popup-content p {
+  margin: 0;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* Form Actions */
+.form-actions {
+  display: flex;
+  justify-content: center;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+  margin-top: 8px;
+}
+
+.btn-primary {
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #2563eb;
+  transform: translateY(-1px);
+}
+
+.btn-primary:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-primary i {
+  font-size: 12px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .add-member-container {
+    padding: 8px;
+  }
+  
+  .form-container {
+    padding: 16px;
+  }
+  
+  .form-section {
+    padding: 12px;
+    margin-bottom: 16px;
+  }
+  
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  
+  .form-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .form-header h2 {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .form-container {
+    padding: 12px;
+  }
+  
+  .form-section {
+    padding: 10px;
+  }
+  
+  .section-title {
+    font-size: 15px;
+  }
+}
+
+/* Loading State */
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  font-size: 16px;
+  color: #6b7280;
+}
+
+/* Additional optimizations for compact layout */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Reduce default margins for form elements */
+input, select, textarea {
+  margin: 0;
+}
+
+/* Tighter spacing for labels */
+label {
+  line-height: 1.3;
+}
+
+/* Remove default margins from headings */
+h1, h2, h3, h4, h5, h6 {
+  margin-top: 0;
+}
+
+/* Compact spacing for select dropdowns */
+select {
+  height: 38px;
+}
+
+/* Ensure consistent input heights */
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+input[type="date"],
+select {
+  height: 38px;
+}
+
+/* Compact textarea */
+textarea {
+  font-family: inherit;
+  line-height: 1.3;
+}
+
+/* Remove extra spacing from form sections on smaller screens */
+@media (max-width: 768px) {
+  .form-section {
+    margin-bottom: 14px;
+  }
+  
+  .section-title {
+    margin-bottom: 10px;
+    padding-bottom: 4px;
+  }
+  
+  .form-grid {
+    margin-bottom: 8px;
+  }
+  
+  .form-group-full {
+    margin-bottom: 8px;
+  }
+}
+
+/* Ultra-compact mode for very small screens */
+@media (max-width: 480px) {
+  .add-member-container {
+    padding: 6px;
+  }
+  
+  .form-container {
+    padding: 10px;
+  }
+  
+  .form-section {
+    padding: 8px;
+    margin-bottom: 12px;
+  }
+  
+  .section-title {
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+  
+  .form-group label,
+  .form-group-full label {
+    font-size: 12px;
+    margin-bottom: 3px;
+  }
+  
+  .form-group input,
+  .form-group select,
+  .form-group textarea,
+  .form-group-full input,
+  .form-group-full select,
+  .form-group-full textarea {
+    padding: 6px 8px;
+    font-size: 13px;
+    height: 34px;
+  }
+  
+  textarea {
+    height: auto !important;
+    min-height: 34px;
+  }
+  
+  .form-actions {
+    padding-top: 12px;
+    margin-top: 6px;
+  }
+  
+  .btn-primary {
+    padding: 8px 20px;
+    font-size: 13px;
+  }
+}
+
+/* Print optimizations */
+@media print {
+  .add-member-container {
+    max-width: none;
+    padding: 0;
+  }
+  
+  .form-section {
+    break-inside: avoid;
+    margin-bottom: 16px;
+  }
+  
+  .back-button,
+  .form-actions {
+    display: none;
+  }
+}
+
+/* Focus improvements for accessibility */
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus,
+.form-group-full input:focus,
+.form-group-full select:focus,
+.form-group-full textarea:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+/* Improved button focus state */
+.btn-primary:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+
+/* Smooth transitions for better UX */
+.form-section {
+  transition: all 0.2s ease;
+}
+
+/* Optimize grid for different screen sizes */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .form-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1025px) {
+  .form-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* High density displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .form-container {
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
   }
 }

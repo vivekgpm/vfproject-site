@@ -24,9 +24,10 @@ function AdminUserManagement() {
   const [errorMessage, setErrorMessage] = useState("");
   const [loadingMessage, setLoadingMessage] = useState("Loading users...");
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortField, setSortField] = useState("displayName");
+  const [sortField, setSortField] = useState("bdaId");
   const [sortDirection, setSortDirection] = useState("asc");
   const [currentPage, setCurrentPage] = useState(1);
+  const [investmentPlanFilter, setInvestmentPlanFilter] = useState("");
   const [pageSize] = useState(10);
   const auth = getAuth();
   const db = getFirestore();
@@ -90,6 +91,17 @@ function AdminUserManagement() {
 
     return () => unsubscribe();
   }, [auth, db, fetchUsers]);
+
+  const handleInvestmentPlanFilterChange = (e) => {
+    setInvestmentPlanFilter(e.target.value);
+    setCurrentPage(1); // Reset to first page when filter changes
+  };
+
+  const handleClearFilter = () => {
+    setInvestmentPlanFilter("");
+    setSearchTerm(""); // Clear search term as well if desired
+    setCurrentPage(1); // Reset to first page
+  };
 
   // Handle form submission to create a new user
   const handleDeleteUser = async (userId) => {
@@ -211,12 +223,20 @@ function AdminUserManagement() {
   }
 
   // Filter and sort users - moved this logic here to avoid scoping issues
-  const filteredUsers = users.filter((user) =>
-    Object.values(user)
+  const filteredUsers = users.filter((user) => {
+    const matchesSearchTerm = Object.values(user)
       .join(" ")
       .toLowerCase()
-      .includes(searchTerm.toLowerCase())
-  );
+      .includes(searchTerm.toLowerCase());
+
+    const planAmount = user.planAmount || 0;
+    const matchesInvestmentPlan =
+      investmentPlanFilter === "" ||
+      (investmentPlanFilter === "economy" && planAmount === 500000) ||
+      (investmentPlanFilter === "premium" && planAmount === 2000000);
+
+    return matchesSearchTerm && matchesInvestmentPlan;
+  });
 
   const sortedUsers = sortUsers(filteredUsers);
 
@@ -227,6 +247,54 @@ function AdminUserManagement() {
     currentPage * pageSize
   );
 
+  const exportUsersToCSV = () => {
+    if (filteredUsers.length === 0) {
+      alert("No users to export.");
+      return;
+    }
+
+    const headers = [
+      "Name",
+      "BDA ID",    
+      "Investment Plan",
+      "Investment Amount",
+      "Invested Date",
+      "Referral ID",
+      "Mobile", // Include User ID for reference
+      "Email", // Include Email
+      "City" // Include Role
+    ];
+
+    const rows = filteredUsers.map((user) => [
+      `"${user.displayName || "N/A"}"`, // Name (DisplayName or Email)
+      `"${user.bdaId || "N/A"}"`, // BDA ID
+      `"${user.planName || "N/A"}"`, // Investment Plan (Name)
+      `"₹${(user.planAmount || 0).toLocaleString("en-IN")}"`, // Investment Plan (Amount)
+      `"${formatDate(user.createdAt)}"`, // Created On
+      `"${user.referralId || "N/A"}"`, // User ID
+      `"${user.phone || "N/A"}"`, // Phone
+      `"${user.email || "N/A"}"`, // Email
+      `"${user.city || "user"}"`, // Role
+    ]);
+
+    // Combine headers and rows
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) => row.join(",")),
+    ].join("\n");
+
+    // Create a Blob and download link
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+
+    link.setAttribute("href", url);
+    link.setAttribute("download", "users_export.csv");
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
   return (
     <div className="admin-management-container">
       <div className="admin-header">
@@ -250,6 +318,28 @@ function AdminUserManagement() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
+            <div className="investment-plan-filter">
+              <label htmlFor="investmentPlan">Filter by Plan:</label>
+              <select
+                id="investmentPlan"
+                value={investmentPlanFilter}
+                onChange={handleInvestmentPlanFilterChange}
+              >
+                <option value="">All Plans</option>
+                <option value="economy">Economy (₹5,00,000)</option>
+                <option value="premium">Premium (₹20,00,000)</option>
+              </select>
+              <button
+                onClick={handleClearFilter}
+                className="btn btn-secondary btn-sm"
+              >
+                Clear Filter
+              </button>
+            </div>
+            <button onClick={exportUsersToCSV} className="btn btn-primary">
+              Export Users (CSV)
+            </button>
+
             <Link to="/admin/add-member" className="btn btn-primary">
               + Add Member
             </Link>
@@ -325,7 +415,7 @@ function AdminUserManagement() {
                 ) : (
                   <tr>
                     <td colSpan="6" style={{ textAlign: "center" }}>
-                     {loadingMessage}
+                      {loadingMessage}
                     </td>
                   </tr>
                 )}
