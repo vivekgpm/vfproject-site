@@ -262,7 +262,7 @@ function AdminUserManagement() {
       "Referral ID",
       "Mobile", // Include User ID for reference
       "Email", // Include Email
-      "City" // Include Role
+      "City" //
     ];
 
     const rows = filteredUsers.map((user) => [
