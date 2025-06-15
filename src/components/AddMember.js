@@ -43,13 +43,14 @@ const AddMember = () => {
     investmentPlan: "",
     referralId: "",
     role: "user",
+    dateOfBirth: "",
     password: "Complex123!",
     paymentMode: "Online",
     remarks: "",
     memberPanCard: "",
     memberAadharCard: "",
     nomineeName: "",
-    nomineeRelation: "Spouse",
+    nomineeRelation: "Other",
     nomineeAadharCard: "",
     accountNo: "",
     bankName: "",
@@ -79,6 +80,7 @@ const AddMember = () => {
         "nomineeName",
         "memberPanCard",
         "ifscCode",
+        "dateofBirth",
       ].includes(name)
     ) {
       setFormData({
@@ -233,6 +235,8 @@ const AddMember = () => {
           ifscCode: formData.ifscCode,
           branchName: formData.branchName,
           investmentDate: formData.investmentDate,
+          dateOfBirth: formData.dateOfBirth,
+          investmentPlanName: selectedPlan.planName,
           userData: {
             ...formData,
             bdaId,
@@ -311,12 +315,13 @@ const AddMember = () => {
         memberPanCard: "",
         memberAadharCard: "",
         nomineeName: "",
-        nomineeRelation: "Spouse",
+        nomineeRelation: "Other",
         nomineeAadharCard: "",
         accountNo: "",
         bankName: "",
         ifscCode: "",
         branchName: "",
+        dateOfBirth: "",
       });
 
       await generateBdaId();
@@ -491,6 +496,17 @@ const AddMember = () => {
             </h3>
             <div className="form-grid">
               <div className="form-group">
+                <label htmlFor="dateOfBirth">Date of Birth:</label>
+                <input
+                  type="date"
+                  id="dateOfBirth"
+                  name="dateOfBirth"
+                  value={formData.dateOfBirth}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div className="form-group">
                 <label htmlFor="memberPanCard">PAN Card Number:</label>
                 <input
                   type="text"
@@ -547,6 +563,7 @@ const AddMember = () => {
                 >
                   <option value="Online">Online</option>
                   <option value="Cheque">Cheque</option>
+                  <option value="Other">Other</option>
                 </select>
               </div>
               <div className="form-group">
@@ -656,10 +673,14 @@ const AddMember = () => {
                   onChange={handleInputChange}
                   required
                 >
-                  <option value="Spouse">Spouse</option>
-                  <option value="Child">Child</option>
-                  <option value="Parent">Parent</option>
-                  <option value="Sibling">Sibling</option>
+                  <option value="Wife">Wife</option>
+                  <option value="Husband">Husband</option>
+                  <option value="Son">Son</option>
+                  <option value="Daughter">Daughter</option>
+                  <option value="Father">Father</option>
+                  <option value="Mother">Mother</option>
+                  <option value="Sister">Sister</option>
+                  <option value="Brother">Brother</option>
                   <option value="Other">Other</option>
                 </select>
               </div>

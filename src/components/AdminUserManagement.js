@@ -254,27 +254,53 @@ function AdminUserManagement() {
     }
 
     const headers = [
-      "Name",
-      "BDA ID",    
       "Investment Plan",
-      "Investment Amount",
-      "Invested Date",
+      "BDA ID",
+      "Name",
       "Referral ID",
       "Mobile", // Include User ID for reference
       "Email", // Include Email
-      "City" //
+      "City", //
+      "State",
+      "Invested Date",
+      "Investment Amount",      
+      "Date of Birth",
+      "Remarks",
+      "Aadhaar",
+      "Pancard",
+      "Bank Name",
+      "Account Number",
+      "IFSC Code",
+      "Branch",
+      "Address",
+      "Nominee Name",
+      "Nominee Relation",
+      "Nominee Aadhar",
     ];
 
     const rows = filteredUsers.map((user) => [
-      `"${user.displayName || "N/A"}"`, // Name (DisplayName or Email)
+      `"${user.investmentPlanName || "N/A"}"`,
       `"${user.bdaId || "N/A"}"`, // BDA ID
-      `"${user.planName || "N/A"}"`, // Investment Plan (Name)
-      `"₹${(user.planAmount || 0).toLocaleString("en-IN")}"`, // Investment Plan (Amount)
-      `"${formatDate(user.createdAt)}"`, // Created On
-      `"${user.referralId || "N/A"}"`, // User ID
-      `"${user.phone || "N/A"}"`, // Phone
-      `"${user.email || "N/A"}"`, // Email
-      `"${user.city || "user"}"`, // Role
+      `"${user.displayName || "N/A"}"`,
+      `"${user.referralId || "N/A"}"`,
+      `"${user.phone || "N/A"}"`,
+      `"${user.email || "N/A"}"`,
+      `"${user.city || "user"}"`,
+      `"${user.state || "user"}"`,
+      `"${formatDate(user.investmentDate || "N/A")}"`, // Created On// City // Email// Phone // User ID // Name (DisplayName or Email)   // Investment Plan (Name)
+      `"${(user.planAmount || 0).toLocaleString("en-IN")}"`, // Investment Plan (Amount)
+      `"${user.dateOfBirth || "N/A"}"`,
+      `"${user.remarks || "N/A"}"`,
+      `"${user.memberPanCard || "N/A"}"`, // Pancard
+      `"${user.memberAadharCard || "N/A"}"`, // Aadhaar
+      `"${user.bankName || "N/A"}"`, // Bank Name
+      `"${user.accountNo || "N/A"}"`, // Account Number
+      `"${user.ifscCode || "N/A"}"`, // IFSC Code
+      `"${user.branchName || "N/A"}"`, // Branch
+      `"${user.address || "N/A"}"`, // Bank Name
+      `"${user.nomineeName || "N/A"}"`, // Nominee Name
+      `"${user.nomineeRelation || "N/A"}"`, // Nominee Relation
+      `"${user.nomineeAadharCard || "N/A"}"`, // Aadhaar
     ]);
 
     // Combine headers and rows
