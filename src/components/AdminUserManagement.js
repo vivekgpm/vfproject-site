@@ -272,6 +272,7 @@ function AdminUserManagement() {
       "BDA ID",
       "Name",
       "Referral ID",
+      "Referrer Name",
       "Mobile", // Include User ID for reference
       "Email", // Include Email
       "City", //
@@ -332,7 +333,8 @@ function AdminUserManagement() {
       `"${user.investmentPlanName || "N/A"}"`,
       `"${user.bdaId || "N/A"}"`,
       `"${user.displayName || "N/A"}"`,
-      `"${user.referralId || "N/A"}"`,
+      `"${user.referrerBdaId || "N/A"}"`,
+       `"${user.referrerName || "N/A"}"`,
       `"${user.phone || "N/A"}"`,
       `"${user.email || "N/A"}"`,
       `"${user.city || "user"}"`,

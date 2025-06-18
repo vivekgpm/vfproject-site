@@ -57,6 +57,8 @@ const AddMember = () => {
     ifscCode: "",
     branchName: "",
     investmentDate: "",
+    referrerName: "",
+    referrerBdaId: "",
   });
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -171,15 +173,21 @@ const AddMember = () => {
             setConsentContent(data.content);
           } else {
             console.error("Consent content is empty or missing");
-            setConsentContent("No consent content available. Please contact administrator.");
+            setConsentContent(
+              "No consent content available. Please contact administrator."
+            );
           }
         } else {
           console.error("Consent document does not exist");
-          setConsentContent("No consent content available. Please contact administrator.");
+          setConsentContent(
+            "No consent content available. Please contact administrator."
+          );
         }
       } catch (error) {
         console.error("Error fetching consent content:", error);
-        setConsentContent("Error loading consent content. Please try again later.");
+        setConsentContent(
+          "Error loading consent content. Please try again later."
+        );
       }
     };
     fetchConsentContent();
@@ -196,7 +204,9 @@ const AddMember = () => {
   const handleReferralSelect = (user) => {
     setFormData((prev) => ({
       ...prev,
-      referralId: user.bdaId || user.uid,
+      referralId: user.id,
+      referrerName: user.displayName,
+      referrerBdaId: user.bdaId,
     }));
   };
 
@@ -271,6 +281,8 @@ const AddMember = () => {
           investmentDate: formData.investmentDate,
           dateOfBirth: formData.dateOfBirth,
           investmentPlanName: selectedPlan.planName,
+          referrerName: formData.referrerName,
+          referrerBdaId: formData.referrerBdaId,
           userData: {
             ...formData,
             bdaId,
@@ -419,10 +431,30 @@ const AddMember = () => {
         )}
 
         <form onSubmit={handleCreateUser} className="create-user-form">
-          {/* Personal Information */}
+          {/* Form arranged as per CSV column order */}
           <div className="form-section">
-            <h3 className="section-title">Personal Information</h3>
+            <h3 className="section-title">Member Registration</h3>
             <div className="form-grid">
+              {/* Investment Plan - Column 1 */}
+              <div className="form-group">
+                <label htmlFor="investmentPlan">Investment Plan:</label>
+                <select
+                  id="investmentPlan"
+                  name="investmentPlan"
+                  value={formData.investmentPlan}
+                  onChange={handleInputChange}
+                  required
+                >
+                  <option value="">Select a plan</option>
+                  {plans.map((plan) => (
+                    <option key={plan.id} value={plan.id}>
+                      {plan.planName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Name - Column 2 */}
               <div className="form-group">
                 <label htmlFor="displayName">Full Name:</label>
                 <input
@@ -436,8 +468,16 @@ const AddMember = () => {
                   style={{ textTransform: "capitalize" }}
                 />
               </div>
+
+              {/* Referral ID - Column 3 */}
               <div className="form-group">
-                <label htmlFor="phone">Phone Number:</label>
+                <label>Referral ID:</label>
+                <UserSearchSelect onUserSelect={handleReferralSelect} />
+              </div>
+
+              {/* Mobile - Column 4 */}
+              <div className="form-group">
+                <label htmlFor="phone">Mobile:</label>
                 <input
                   type="tel"
                   id="phone"
@@ -451,8 +491,10 @@ const AddMember = () => {
                   placeholder="10-digit mobile number"
                 />
               </div>
+
+              {/* Email - Column 5 */}
               <div className="form-group">
-                <label htmlFor="email">Email Address:</label>
+                <label htmlFor="email">Email:</label>
                 <input
                   type="email"
                   id="email"
@@ -463,6 +505,8 @@ const AddMember = () => {
                   placeholder="Enter email address"
                 />
               </div>
+
+              {/* City - Column 6 */}
               <div className="form-group">
                 <label htmlFor="city">City:</label>
                 <input
@@ -476,6 +520,8 @@ const AddMember = () => {
                   style={{ textTransform: "capitalize" }}
                 />
               </div>
+
+              {/* State - Column 7 */}
               <div className="form-group">
                 <label htmlFor="state">State:</label>
                 <select
@@ -509,182 +555,180 @@ const AddMember = () => {
                 </select>
               </div>
             </div>
-            <div className="form-group-full">
-              <label htmlFor="address">Complete Address:</label>
-              <textarea
-                id="address"
-                name="address"
-                value={formData.address}
-                onChange={handleInputChange}
-                required
-                placeholder="Enter complete address"
-                rows="2"
-              />
+            {/* Additional Fields */}
+            <div className="form-section">
+              <h3 className="section-title">Additional Information</h3>
+              <div className="form-grid">
+                <div className="form-group">
+                  <label htmlFor="paymentMode">Payment Mode:</label>
+                  <select
+                    id="paymentMode"
+                    name="paymentMode"
+                    value={formData.paymentMode}
+                    onChange={handleInputChange}
+                    required
+                  >
+                    <option value="Online">Online</option>
+                    <option value="Cheque">Cheque</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="investmentDate">Investment Date:</label>
+                  <input
+                    type="date"
+                    id="investmentDate"
+                    name="investmentDate"
+                    value={formData.investmentDate}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+                {/* Additional Remarks - Column 9 */}
+                <div className="form-group">
+                  <label htmlFor="remarks">Additional Remarks:</label>
+                  <textarea
+                    id="remarks"
+                    name="remarks"
+                    value={formData.remarks}
+                    onChange={handleInputChange}
+                    rows="2"
+                    placeholder="Additional notes or remarks"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="form-section">
+              <h3 className="section-title">Personal Details</h3>
+              <div className="form-grid">
+                {/* Date of Birth - Column 8 */}
+                <div className="form-group">
+                  <label htmlFor="dateOfBirth">Date of Birth:</label>
+                  <input
+                    type="date"
+                    id="dateOfBirth"
+                    name="dateOfBirth"
+                    value={formData.dateOfBirth}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+                {/* Aadhaar Card Number - Column 10 */}
+                <div className="form-group">
+                  <label htmlFor="memberAadharCard">Aadhaar Card Number:</label>
+                  <input
+                    type="number"
+                    id="memberAadharCard"
+                    name="memberAadharCard"
+                    value={formData.memberAadharCard}
+                    onChange={handleInputChange}
+                    title="Enter valid 12-digit Aadhar number"
+                    placeholder="Aadhaar Card"
+                    maxLength={12}
+                    required
+                  />
+                </div>
+
+                {/* Pancard - Column 11 */}
+                <div className="form-group">
+                  <label htmlFor="memberPanCard">PAN Card Number:</label>
+                  <input
+                    type="text"
+                    id="memberPanCard"
+                    name="memberPanCard"
+                    value={formData.memberPanCard}
+                    onChange={handleInputChange}
+                    title="Enter valid PAN card number (e.g., ABCDE1234F)"
+                    placeholder="PAN Card"
+                    maxLength={10}
+                    style={{ textTransform: "capitalize" }}
+                    required
+                  />
+                </div>
+              </div>
+              {/* Complete Address - Column 16 (Full width) */}
+              <div className="form-group-full">
+                <label htmlFor="address">Complete Address:</label>
+                <textarea
+                  id="address"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="Enter complete address"
+                  rows="2"
+                />
+              </div>
+            </div>
+            {/* Nominee Details Section */}
+            <div className="form-section">
+              <h3 className="section-title">Bank Details</h3>
+              <div className="form-grid">
+                {" "}
+                {/* Bank Name - Column 12 */}
+                <div className="form-group">
+                  <label htmlFor="bankName">Bank Name:</label>
+                  <input
+                    type="text"
+                    id="bankName"
+                    name="bankName"
+                    value={formData.bankName}
+                    onChange={handleInputChange}
+                    required
+                    placeholder="Enter bank name"
+                    style={{ textTransform: "capitalize" }}
+                  />
+                </div>
+                {/* Account Number - Column 13 */}
+                <div className="form-group">
+                  <label htmlFor="accountNo">Account Number:</label>
+                  <input
+                    type="number"
+                    id="accountNo"
+                    name="accountNo"
+                    value={formData.accountNo}
+                    onChange={handleInputChange}
+                    required
+                    placeholder="Enter account number"
+                  />
+                </div>
+                {/* IFSC Code - Column 14 */}
+                <div className="form-group">
+                  <label htmlFor="ifscCode">IFSC Code:</label>
+                  <input
+                    type="text"
+                    id="ifscCode"
+                    name="ifscCode"
+                    value={formData.ifscCode}
+                    onChange={handleInputChange}
+                    required
+                    placeholder="Enter IFSC code"
+                  />
+                </div>
+                {/* Branch Name - Column 15 */}
+                <div className="form-group">
+                  <label htmlFor="branchName">Branch Name:</label>
+                  <input
+                    type="text"
+                    id="branchName"
+                    name="branchName"
+                    value={formData.branchName}
+                    onChange={handleInputChange}
+                    required
+                    placeholder="Enter branch name"
+                    style={{ textTransform: "capitalize" }}
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Member Identification & Investment Details Combined */}
+          {/* Nominee Details Section */}
           <div className="form-section">
-            <h3 className="section-title">
-              Member Identification & Investment
-            </h3>
+            <h3 className="section-title">Nominee Details</h3>
             <div className="form-grid">
-              <div className="form-group">
-                <label htmlFor="dateOfBirth">Date of Birth:</label>
-                <input
-                  type="date"
-                  id="dateOfBirth"
-                  name="dateOfBirth"
-                  value={formData.dateOfBirth}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="memberPanCard">PAN Card Number:</label>
-                <input
-                  type="text"
-                  id="memberPanCard"
-                  name="memberPanCard"
-                  value={formData.memberPanCard}
-                  onChange={handleInputChange}
-                  title="Enter valid PAN card number (e.g., ABCDE1234F)"
-                  placeholder="PAN Card"
-                  maxLength={10}
-                  style={{ textTransform: "capitalize" }}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="memberAadharCard">Aadhar Card Number:</label>
-                <input
-                  type="number"
-                  id="memberAadharCard"
-                  name="memberAadharCard"
-                  value={formData.memberAadharCard}
-                  onChange={handleInputChange}
-                  title="Enter valid 12-digit Aadhar number"
-                  placeholder="Aadhar Card"
-                  maxLength={12}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="investmentPlan">Investment Plan:</label>
-                <select
-                  id="investmentPlan"
-                  name="investmentPlan"
-                  value={formData.investmentPlan}
-                  onChange={handleInputChange}
-                  required
-                >
-                  <option value="">Select a plan</option>
-                  {plans.map((plan) => (
-                    <option key={plan.id} value={plan.id}>
-                      {plan.planName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-group">
-                <label htmlFor="paymentMode">Payment Mode:</label>
-                <select
-                  id="paymentMode"
-                  name="paymentMode"
-                  value={formData.paymentMode}
-                  onChange={handleInputChange}
-                  required
-                >
-                  <option value="Online">Online</option>
-                  <option value="Cheque">Cheque</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label htmlFor="investmentDate">Investment Date:</label>
-                <input
-                  type="date"
-                  id="investmentDate"
-                  name="investmentDate"
-                  value={formData.investmentDate}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Referral ID:</label>
-                <UserSearchSelect onUserSelect={handleReferralSelect} />
-              </div>
-            </div>
-            <div className="form-grid">
-              <div className="form-group">
-                <label htmlFor="accountNo">Account Number:</label>
-                <input
-                  type="number"
-                  id="accountNo"
-                  name="accountNo"
-                  value={formData.accountNo}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="Enter account number"
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="bankName">Bank Name:</label>
-                <input
-                  type="text"
-                  id="bankName"
-                  name="bankName"
-                  value={formData.bankName}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="Enter bank name"
-                  style={{ textTransform: "capitalize" }}
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="ifscCode">IFSC Code:</label>
-                <input
-                  type="text"
-                  id="ifscCode"
-                  name="ifscCode"
-                  value={formData.ifscCode}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="Enter IFSC code"
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="branchName">Branch Name:</label>
-                <input
-                  type="text"
-                  id="branchName"
-                  name="branchName"
-                  value={formData.branchName}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="Enter branch name"
-                  style={{ textTransform: "capitalize" }}
-                />
-              </div>
-            </div>
-            <div className="form-group-full">
-              <label htmlFor="remarks">Additional Remarks:</label>
-              <textarea
-                id="remarks"
-                name="remarks"
-                value={formData.remarks}
-                onChange={handleInputChange}
-                rows="2"
-                placeholder="Additional notes or remarks"
-              />
-            </div>
-          </div>
-
-          {/* Nominee & Bank Details Combined */}
-          <div className="form-section">
-            <h3 className="section-title">Nominee & Bank Details</h3>
-            <div className="form-grid">
+              {/* Nominee Name - Column 17 */}
               <div className="form-group">
                 <label htmlFor="nomineeName">Nominee Name:</label>
                 <input
@@ -698,6 +742,8 @@ const AddMember = () => {
                   style={{ textTransform: "capitalize" }}
                 />
               </div>
+
+              {/* Relationship - Column 18 */}
               <div className="form-group">
                 <label htmlFor="nomineeRelation">Relationship:</label>
                 <select
@@ -718,10 +764,10 @@ const AddMember = () => {
                   <option value="Other">Other</option>
                 </select>
               </div>
+
+              {/* Nominee Aadhar Card - Column 19 */}
               <div className="form-group">
-                <label htmlFor="nomineeAadharCard">
-                  Nominee Aadhar Number:
-                </label>
+                <label htmlFor="nomineeAadharCard">Nominee Aadhar Card:</label>
                 <input
                   type="number"
                   id="nomineeAadharCard"
@@ -754,9 +800,7 @@ const AddMember = () => {
               <div className="consent-popup">
                 <div className="consent-popup-content">
                   <h3>Terms and Conditions</h3>
-                  <div className="consent-text">
-                    {consentContent}
-                  </div>
+                  <div className="consent-text">{consentContent}</div>
                   <button
                     className="btn-primary"
                     onClick={() => setShowConsentPopup(false)}
