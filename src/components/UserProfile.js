@@ -195,7 +195,7 @@ const UserProfile = () => {
                     </td>
                     <td>₹{transaction.amount?.toLocaleString("en-IN")}</td>
                     <td>{transaction.paymentDate || "-"}</td>
-                    <td>{transaction.remarks || "-"}</td>
+                    <td>{transaction.remarks || "-"}{transaction.referredUserId}</td>
                   </tr>
                 ))}
               </tbody>

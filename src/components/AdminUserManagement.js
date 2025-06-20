@@ -166,23 +166,28 @@ function AdminUserManagement() {
       }
 
       const optionsDate = {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        timeZone: 'Asia/Kolkata', // Set timezone to IST
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        timeZone: "Asia/Kolkata", // Set timezone to IST
       };
 
       const optionsTime = {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
         hour12: true, // For AM/PM
-        timeZone: 'Asia/Kolkata', // Set timezone to IST
+        timeZone: "Asia/Kolkata", // Set timezone to IST
       };
 
       // Format date and time parts separately to achieve "DD Mon YYYY HH:MM:SS AM/PM"
-      const formattedDate = new Intl.DateTimeFormat('en-GB', optionsDate).format(date).replace(/ /g, '-'); // Added replace to get DD-MMM-YYYY
-      const formattedTime = new Intl.DateTimeFormat('en-US', optionsTime).format(date);
+      const formattedDate = new Intl.DateTimeFormat("en-GB", optionsDate)
+        .format(date)
+        .replace(/ /g, "-"); // Added replace to get DD-MMM-YYYY
+      const formattedTime = new Intl.DateTimeFormat(
+        "en-US",
+        optionsTime
+      ).format(date);
 
       return `${formattedDate} ${formattedTime}`;
     } catch (error) {
@@ -305,36 +310,46 @@ function AdminUserManagement() {
         } else if (timestamp.seconds) {
           date = new Date(timestamp.seconds * 1000);
         } else if (typeof timestamp === "number") {
-          date = timestamp > 1000000000000 ? new Date(timestamp) : new Date(timestamp * 1000);
+          date =
+            timestamp > 1000000000000
+              ? new Date(timestamp)
+              : new Date(timestamp * 1000);
         } else {
           date = new Date(timestamp);
         }
 
-        if (isNaN(date.getTime())) { 
+        if (isNaN(date.getTime())) {
           throw new Error("Invalid Date object created");
         }
 
         const options = {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric',
-          timeZone: 'Asia/Kolkata',
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+          timeZone: "Asia/Kolkata",
         };
 
-        return new Intl.DateTimeFormat('en-GB', options).format(date).replace(/ /g, '-');
-
+        return new Intl.DateTimeFormat("en-GB", options)
+          .format(date)
+          .replace(/ /g, "-");
       } catch (error) {
         console.error("Error formatting date for export:", error, timestamp);
         return "Invalid Date";
       }
     };
-
-    const rows = filteredUsers.map((user) => [
+    const users = filteredUsers
+      .map((user) => ({ id: user.id, ...user }))
+      .sort((a, b) => {
+        const bdaIdA = parseInt(a.bdaId?.replace("BDA", "") || "0");
+        const bdaIdB = parseInt(b.bdaId?.replace("BDA", "") || "0");
+        return bdaIdA - bdaIdB;
+      });
+    const rows = users.map((user) => [
       `"${user.investmentPlanName || "N/A"}"`,
       `"${user.bdaId || "N/A"}"`,
       `"${user.displayName || "N/A"}"`,
       `"${user.referrerBdaId || "N/A"}"`,
-       `"${user.referrerName || "N/A"}"`,
+      `"${user.referrerName || "N/A"}"`,
       `"${user.phone || "N/A"}"`,
       `"${user.email || "N/A"}"`,
       `"${user.city || "user"}"`,
@@ -344,7 +359,7 @@ function AdminUserManagement() {
       `"${user.dateOfBirth || "N/A"}"`,
       `"${user.remarks || "N/A"}"`,
       `"${user.memberAadharCard || "N/A"}"`,
-      `"${user.memberPanCard || "N/A"}"`,      
+      `"${user.memberPanCard || "N/A"}"`,
       `"${user.bankName || "N/A"}"`,
       `"${user.accountNo || "N/A"}"`,
       `"${user.ifscCode || "N/A"}"`,
