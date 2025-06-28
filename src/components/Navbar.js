@@ -27,7 +27,10 @@ const Navbar = () => {
       <div className="navbar-container">
         <Link to="/" className="navbar-logo">
           <img src="/logo.jpg" alt="Vachana Business Development Executive" />
-        </Link>        <div className={`navbar-menu ${isMenuOpen ? 'active' : ''}`}>
+        </Link>
+        {/* Debugging: Display user state */}
+        {/* <div>User: {user ? JSON.stringify(user) : 'Not logged in'}</div> */}
+        <div className={`navbar-menu ${isMenuOpen ? 'active' : ''}`}>
           <Link to="/" className="nav-link" onClick={closeMenu}>Home</Link>
           <Link to="/projects" className="nav-link" onClick={closeMenu}>Projects</Link>
           
@@ -36,7 +39,10 @@ const Navbar = () => {
           {user ? (
             <>
               {user.role === 'admin' && (
-                <Link to="/admin" className="nav-link" onClick={closeMenu}>Admin</Link>
+                <>
+                  <Link to="/admin" className="nav-link" onClick={closeMenu}>Admin</Link>
+                  <Link to="/admin/inventory" className="nav-link" onClick={closeMenu}>Inventory</Link>
+                </>
               )}
               {user.role === 'user' && (
                 <Link to="/profile" className="nav-link" onClick={closeMenu}>Profile</Link>

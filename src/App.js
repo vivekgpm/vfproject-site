@@ -21,6 +21,7 @@ import EditProfile from "./components/EditProfile"; // Import EditProfile
 import "../src/components/AppStyles.css"; // Import the centralized CSS file
 import ManageAssetTransaction from "./components/ManageAssetTransaction";
 import UpdateAssetPurchase from "./components/UpdateAssetPurchase";
+import Inventory from "./components/Inventory"; // Import Inventory
 import "@fortawesome/fontawesome-free/css/all.min.css";
 
 function App() {
@@ -123,6 +124,14 @@ function App() {
                 element={
                   <ProtectedRoute isAdminRoute={true}>
                     <UpdateAssetPurchase />
+                  </ProtectedRoute>
+                }
+              />
+               <Route
+                path="/admin/inventory"
+                element={
+                  <ProtectedRoute isAdminRoute={true}>
+                    <Inventory />
                   </ProtectedRoute>
                 }
               />

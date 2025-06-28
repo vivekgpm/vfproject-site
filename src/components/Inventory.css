@@ -1,0 +1,142 @@
+.inventory-container {
+  max-width: 1100px;
+  margin: 40px auto;
+  padding: 20px;
+  font-family: sans-serif;
+}
+
+.title {
+  font-size: 24px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.project-block {
+  margin-bottom: 40px;
+  background: #fff;
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.project-header {
+  margin-bottom: 12px;
+}
+
+.grid-wrapper {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.unit-grid.auto-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+  gap: 8px;
+  flex: 1;
+  max-width: 100%;
+}
+
+.unit-box {
+  width: 40px;
+  height: 40px;
+  font-size: 12px;
+  font-weight: bold;
+  color: white;
+  background-color: #ccc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+}
+
+.unit-box.booked {
+  background-color: #2ecc71;
+}
+
+.unit-box.available {
+  background-color: #999;
+}
+
+.garden-box {
+  background-color: #27ae60;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 12px 8px;
+  border-radius: 6px;
+  min-width: 80px;
+  text-align: center;
+  height: fit-content;
+}
+
+.creative-layout {
+  display: grid;
+  grid-template-areas:
+    "top-left garden top-right"
+    "bottom-left garden bottom-right";
+  gap: 20px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.quadrant {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(30px, 1fr));
+  gap: 8px;
+  max-width: 200px;
+}
+
+.top-left {
+  grid-area: top-left;
+}
+
+.top-right {
+  grid-area: top-right;
+}
+
+.bottom-left {
+  grid-area: bottom-left;
+}
+
+.bottom-right {
+  grid-area: bottom-right;
+}
+
+.garden-center {
+  grid-area: garden;
+  background-color: #27ae60;
+  color: white;
+  font-weight: bold;
+  font-size: 12px;
+  padding: 12px 8px;
+  border-radius: 6px;
+  text-align: center;
+  width: 100px;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.unit-box {
+  width: 30px;
+  height: 30px;
+  font-size: 12px;
+  font-weight: bold;
+  color: white;
+  background-color: #ccc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+}
+
+.unit-box.booked {
+  background-color: #2ecc71;
+}
+
+.unit-box.available {
+  background-color: #999;
+}
