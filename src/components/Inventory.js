@@ -22,7 +22,10 @@ const Inventory = () => {
       try {
         const q = collection(db, "inventory");
         const qs = await getDocs(q);
-        const projectsList = qs.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        const projectsList = qs.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
         setInventoryData(projectsList);
         setLoading(false);
       } catch (err) {
@@ -45,7 +48,9 @@ const Inventory = () => {
         inventoryData.map((item) => {
           const { id, unitName, total, remaining } = item;
           const booked = total - remaining;
-          const boxArray = Array(total).fill("available").fill("booked", 0, booked);
+          const boxArray = Array(total)
+            .fill("available")
+            .fill("booked", 0, booked);
           const shuffledBoxes = shuffleArray(boxArray);
 
           // Divide boxes into 4 corners
@@ -54,35 +59,50 @@ const Inventory = () => {
             shuffledBoxes.slice(0, quarter),
             shuffledBoxes.slice(quarter, 2 * quarter),
             shuffledBoxes.slice(2 * quarter, 3 * quarter),
-            shuffledBoxes.slice(3 * quarter)
+            shuffledBoxes.slice(3 * quarter),
           ];
 
           return (
             <div key={id} className="project-block">
               <div className="project-header">
                 <h3>{unitName}</h3>
-                <p>Total: {total} | Booked: {booked} | Available: {remaining}</p>
+                <p>
+                  Total: {total}
+                  <div className={`unit-box booked`} />
+                  Booked: {booked}
+                  <div className={`unit-box available`} />
+                  Available: {remaining}
+                </p>
               </div>
+
               <div className="creative-layout">
                 <div className="quadrant top-left">
                   {quadrants[0].map((type, i) => (
-                    <div key={`tl-${i}`} className={`unit-box ${type}`}>{i + 1}</div>
+                    <div key={`tl-${i}`} className={`unit-box ${type}`}>
+                      {i + 1}
+                    </div>
                   ))}
                 </div>
                 <div className="quadrant top-right">
                   {quadrants[1].map((type, i) => (
-                    <div key={`tr-${i}`} className={`unit-box ${type}`}>{i + 1 + quarter}</div>
+                    <div key={`tr-${i}`} className={`unit-box ${type}`}>
+                      {i + 1 + quarter}
+                    </div>
                   ))}
                 </div>
                 <div className="garden-center">Garden Area</div>
                 <div className="quadrant bottom-left">
                   {quadrants[2].map((type, i) => (
-                    <div key={`bl-${i}`} className={`unit-box ${type}`}>{i + 1 + 2 * quarter}</div>
+                    <div key={`bl-${i}`} className={`unit-box ${type}`}>
+                      {i + 1 + 2 * quarter}
+                    </div>
                   ))}
                 </div>
                 <div className="quadrant bottom-right">
                   {quadrants[3].map((type, i) => (
-                    <div key={`br-${i}`} className={`unit-box ${type}`}>{i + 1 + 3 * quarter}</div>
+                    <div key={`br-${i}`} className={`unit-box ${type}`}>
+                      {i + 1 + 3 * quarter}
+                    </div>
                   ))}
                 </div>
               </div>

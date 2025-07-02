@@ -12,7 +12,8 @@ import {
 import "../components/AppStyles.css";
 
 const Profile = () => {
-  const { user } = useAuth();  const [userDetails, setUserDetails] = useState(null);
+  const { user } = useAuth();
+  const [userDetails, setUserDetails] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -49,16 +50,18 @@ const Profile = () => {
           ...doc.data(),
         }));
 
-        setTransactions(transactionsList);        // Calculate lifetime earnings and paid amount
+        setTransactions(transactionsList); // Calculate lifetime earnings and paid amount
         const totalEarnings = transactionsList.reduce((sum, transaction) => {
           return sum + (transaction.amount || 0);
         }, 0);
-        
+
         // Calculate paid amount (sum of transactions with payment date)
         const paidAmount = transactionsList.reduce((sum, transaction) => {
-          return transaction.paymentDate ? sum + (transaction.amount || 0) : sum;
+          return transaction.paymentDate
+            ? sum + (transaction.amount || 0)
+            : sum;
         }, 0);
-        
+
         setLifetimeEarnings(totalEarnings);
         setPaidAmount(paidAmount);
       } catch (err) {
@@ -89,41 +92,9 @@ const Profile = () => {
             As of {new Date().toLocaleDateString()}
           </p>
         </div>
-      
       </div>
 
       <div className="investment-highlights">
-          <div className="user-info-card">
-          <div className="user-info-header">
-            <h3>Account Information</h3>
-          </div>
-          <div className="user-info-content">
-            <div className="info-row">
-              <span className="info-label">Name:</span>
-              <span className="info-value">
-                {userDetails?.displayName || "Not set"}
-              </span>
-            </div>
-            <div className="info-row">
-              <span className="info-label">Email:</span>
-              <span className="info-value">
-                {userDetails?.email || "Not set"}
-              </span>
-            </div>
-            <div className="info-row">
-              <span className="info-label">Phone:</span>
-              <span className="info-value">
-                {userDetails?.phone || "Not set"}
-              </span>
-            </div>
-               <div className="info-row">
-              <span className="info-label">ID:</span>
-              <span className="info-value">
-                {userDetails?.bdaId || "Not set"}
-              </span>
-            </div>
-          </div>
-        </div>
         <div className="highlight-card investment-plan">
           <div className="highlight-header">
             <h3>Investmented Amount</h3>
@@ -132,7 +103,9 @@ const Profile = () => {
             <span className="highlight-value">
               {userDetails?.investmentPlan
                 ? `${userDetails.investmentPlan}`
-                : `${userDetails.planAmount.toLocaleString('en-IN') || "Not set"}`}
+                : `${
+                    userDetails.planAmount.toLocaleString("en-IN") || "Not set"
+                  }`}
             </span>
           </div>
         </div>
@@ -142,16 +115,55 @@ const Profile = () => {
           </div>
           <div className="highlight-content">
             <span className="highlight-value">
-              ₹{lifetimeEarnings.toLocaleString('en-IN')}
+              ₹{lifetimeEarnings.toLocaleString("en-IN")}
             </span>
           </div>
-        </div>        <div className="highlight-card lifetime-earnings">
+        </div>{" "}
+        <div className="highlight-card lifetime-earnings">
           <div className="highlight-header">
             <h3>Paid Amount</h3>
           </div>
           <div className="highlight-content">
             <span className="highlight-value">
-              ₹{paidAmount.toLocaleString('en-IN')}
+              ₹{paidAmount.toLocaleString("en-IN")}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="user-info-card">
+        <div className="user-info-header">
+          <h3>Account Information</h3>
+        </div>
+        <div className="user-info-content">
+          <div className="info-row">
+            <span className="info-label">Name:</span>
+            <span className="info-value">
+              {userDetails?.displayName || "Not set"}
+            </span>
+          </div>
+          <div className="info-row">
+            <span className="info-label">Plan:</span>
+            <span className="info-value">
+              {userDetails?.investmentPlanName || "Not set"}
+            </span>
+          </div>
+          <div className="info-row">
+            <span className="info-label">Email:</span>
+            <span className="info-value">
+              {userDetails?.email || "Not set"}
+            </span>
+          </div>
+          <div className="info-row">
+            <span className="info-label">Phone:</span>
+            <span className="info-value">
+              {userDetails?.phone || "Not set"}
+            </span>
+          </div>
+          <div className="info-row">
+            <span className="info-label">ID:</span>
+            <span className="info-value">
+              {userDetails?.bdaId || "Not set"}
             </span>
           </div>
         </div>
@@ -168,7 +180,7 @@ const Profile = () => {
                   <th>Type</th>
                   <th>Amount</th>
                   <th>Payment Date</th>
-                   <th>Remarks</th>
+                  <th>Remarks</th>
                 </tr>
               </thead>
               <tbody>
@@ -180,7 +192,7 @@ const Profile = () => {
                     <td>{transaction.type}</td>
                     <td>₹{transaction.amount?.toLocaleString()}</td>
                     <td>{transaction.paymentDate}</td>
-                     <td>{transaction.remarks}</td>
+                    <td>{transaction.remarks}</td>
                   </tr>
                 ))}
               </tbody>

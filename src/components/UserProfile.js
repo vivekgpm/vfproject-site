@@ -8,9 +8,10 @@ import {
   query,
   where,
   getDocs,
-  
 } from "firebase/firestore";
 import "./AppStyles.css";
+import { getDisplayNameFromUid } from "../utils/getDisplayNameFromUid";
+import { formatDate } from "../utils/dateFunctions.js"; // Import your date formatting function
 
 const UserProfile = () => {
   const { userId } = useParams();
@@ -20,6 +21,8 @@ const UserProfile = () => {
   const [error, setError] = useState(null);
   const [lifetimeEarnings, setLifetimeEarnings] = useState(0);
   const [paidAmount, setPaidAmount] = useState(0);
+  const [remainingAmount, setRemainingAmount] = useState(0);
+  const [referredNames, setReferredNames] = useState({});
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -56,6 +59,22 @@ const UserProfile = () => {
         });
 
         setTransactions(sortedTransactions);
+        // Fetch referred user display names if needed
+        const referredIds = sortedTransactions
+          .map((t) => t.referredUserId)
+          .filter((id) => !!id);
+        const namesMap = {};
+        for (const refId of referredIds) {
+          try {
+            const dp = await getDisplayNameFromUid(refId);
+            if (dp) {
+              namesMap[refId] = dp;
+            }
+          } catch {
+            namesMap[refId] = "";
+          }
+        }
+        setReferredNames(namesMap);
 
         // Calculate totals
         const totalEarnings = transactionsList.reduce((sum, transaction) => {
@@ -67,6 +86,9 @@ const UserProfile = () => {
             ? sum + (transaction.amount || 0)
             : sum;
         }, 0);
+
+        const remainingAmount = userData.planAmount * 4 - totalEarnings;
+        setRemainingAmount(remainingAmount);
 
         setLifetimeEarnings(totalEarnings);
         setPaidAmount(paidAmount);
@@ -105,37 +127,6 @@ const UserProfile = () => {
         </Link>
       </div>
       <div className="investment-highlights">
-        <div className="user-info-card">
-          <div className="user-info-header">
-            <h3>Account Information</h3>
-          </div>
-          <div className="user-info-content">
-            <div className="info-row">
-              <span className="info-label">Name:</span>
-              <span className="info-value">
-                {userDetails?.displayName || "Not set"}
-              </span>
-            </div>
-            <div className="info-row">
-              <span className="info-label">Email:</span>
-              <span className="info-value">
-                {userDetails?.email || "Not set"}
-              </span>
-            </div>
-            <div className="info-row">
-              <span className="info-label">Phone:</span>
-              <span className="info-value">
-                {userDetails?.phone || "Not set"}
-              </span>
-            </div>
-            <div className="info-row">
-              <span className="info-label">ID:</span>
-              <span className="info-value">
-                {userDetails?.bdaId || "Not set"}
-              </span>
-            </div>
-          </div>
-        </div>
         <div className="highlight-card investment-plan">
           <div className="highlight-header">
             <h3>Invested Amount</h3>
@@ -166,6 +157,56 @@ const UserProfile = () => {
             </span>
           </div>
         </div>
+        <div className="highlight-card lifetime-earnings">
+          <div className="highlight-header">
+            <h3>Remaining Elgible Earnings</h3>
+          </div>
+          <div className="highlight-content">
+            <span className="highlight-value">
+              ₹{remainingAmount.toLocaleString("en-IN")}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div className="user-info-card">
+        <div className="user-info-card">
+          <div className="user-info-header">
+            <h3>Account Information</h3>
+          </div>
+          <div className="user-info-content">
+            <div className="info-row">
+              <span className="info-label">Name: </span>
+              <span className="info-value">
+                {userDetails?.displayName || "Not set"}
+                
+              </span>
+            </div>
+            <div className="info-row">
+              <span className="info-label">Plan: </span>
+              <span className="info-value">
+               {userDetails.investmentPlanName}
+              </span>
+            </div>
+            <div className="info-row">
+              <span className="info-label">Email:</span>
+              <span className="info-value">
+                {userDetails?.email || "Not set"}
+              </span>
+            </div>
+            <div className="info-row">
+              <span className="info-label">Phone:</span>
+              <span className="info-value">
+                {userDetails?.phone || "Not set"}
+              </span>
+            </div>
+            <div className="info-row">
+              <span className="info-label">ID:</span>
+              <span className="info-value">
+                {userDetails?.bdaId || "Not set"}
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="transactions-section">
@@ -186,7 +227,7 @@ const UserProfile = () => {
                 {transactions.map((transaction) => (
                   <tr key={transaction.id}>
                     <td>
-                      {transaction.createdAt?.toDate().toLocaleDateString()}
+                      {formatDate(transaction.createdAt) || "Invalid Date"}
                     </td>
                     <td>
                       {transaction.type === "assetPurchase"
@@ -195,7 +236,13 @@ const UserProfile = () => {
                     </td>
                     <td>₹{transaction.amount?.toLocaleString("en-IN")}</td>
                     <td>{transaction.paymentDate || "-"}</td>
-                    <td>{transaction.remarks || "-"}{transaction.referredUserId}</td>
+                    <td>
+                      {transaction.referredUserId &&
+                      referredNames[transaction.referredUserId]
+                        ? ` - ${referredNames[transaction.referredUserId]}`
+                        : ""}
+                      {transaction.remarks ? ` - ${transaction.remarks}` : ""}
+                    </td>
                   </tr>
                 ))}
               </tbody>

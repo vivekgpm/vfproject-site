@@ -16,7 +16,7 @@ const AdminHome = () => {
   const [filteredTransactions, setFilteredTransactions] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [showLastDayOnly, setShowLastDayOnly] = useState(false);
-  const pageSize = 20;
+  const pageSize = 15;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -279,13 +279,29 @@ const AdminHome = () => {
           </thead>
           <tbody>
             {paginatedTransactions.map((transaction) => (
-              <tr key={transaction.id}>
+              <tr
+                key={transaction.id}
+                title={transaction.description || "No description"}
+              >
                 <td>{formatDate(transaction.createdAt)}</td>
                 <td>{getUserDisplayName(transaction.userId)}</td>
                 <td>
                   {transaction.type === "assetPurchase"
                     ? "Asset Purchase"
-                    : transaction.type}
+                    : transaction.type}{" "}
+                  <span
+                    style={{
+                      marginLeft: 6,
+                      cursor: "pointer",
+                      color: "#03a6a1",
+                      fontSize: "1.1em",
+                      verticalAlign: "middle",
+                    }}
+                    title={transaction.description || ""}
+                    className="help-icon"
+                  >
+                    &#9432;
+                  </span>
                 </td>
                 <td>₹{transaction.amount.toLocaleString("en-IN") || "0"}</td>
                 <td>

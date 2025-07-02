@@ -15,3 +15,4 @@ export async function getUidFromBdaId(bdaId) {
   }
   return null;
 }
+
