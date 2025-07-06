@@ -1,5 +1,5 @@
 import React from "react";
-import "../components/AppStyles.css";
+import '../styles/AppStyles.css'; // Import your CSS styles
 
 const Plans = () => {
   return (

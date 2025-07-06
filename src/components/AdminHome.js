@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { db } from "../firebase";
-import "../components/AppStyles.css"; // Import the centralized CSS file
+import "../styles/AppStyles.css"; // Import the centralized CSS file
 
 const AdminHome = () => {
   const [transactions, setTransactions] = useState([]);

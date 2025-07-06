@@ -16,7 +16,7 @@ import {
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getAllPlans } from "../api/planApi";
 import UserSearchSelect from "./UserSearchSelect";
-import "../components/AppStyles.css";
+import '../styles/AppStyles.css'; // Import your CSS styles
 import { indianStates, countries } from "../utils/constants";
 
 const EXP_API_URL = process.env.REACT_APP_API_URL_3 || "http://localhost:3001";

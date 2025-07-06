@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
-import "../components/AppStyles.css";
+import '../styles/AppStyles.css'; // Import your CSS styles
 import { useAuth } from "../contexts/AuthContext";
 import { getProjectById } from "../api/projectApi";
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
-import "./Inventory.css";
+import "../styles/Inventory.css"; // Import your CSS styles
 
 const shuffleArray = (array) => {
   const arr = [...array];

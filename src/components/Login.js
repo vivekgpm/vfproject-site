@@ -1,9 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-
-import { auth } from "../firebase";
 import { useAuth } from "../contexts/AuthContext";
-import "../components/AppStyles.css";
+import '../styles/AppStyles.css'; // Import your CSS styles
 
 const Login = () => {
   const [email, setEmail] = useState("");

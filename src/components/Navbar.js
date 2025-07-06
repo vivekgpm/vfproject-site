@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import '../components/AppStyles.css';
+import '../styles/AppStyles.css'; // Import your CSS styles
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);

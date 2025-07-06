@@ -9,21 +9,18 @@ import {
   Building,
   Star,
   ArrowRight,
-  Menu, // Added for mobile navbar
-  X, // Added for mobile navbar close
 } from "lucide-react";
 import img1 from "../assets/images/img68.jpg";
 import img2 from "../assets/images/img91.jpg";
 import img3 from "../assets/images/img100.jpg";
 import img4 from "../assets/images/overview.jpg";
-import "./Home.css"; // Import your CSS styles
+import "../styles/Home.css"; // Import your CSS styles
 // Example image, replace with actual images
 
 const HomePage = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [showMessage, setShowMessage] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0); // For image slider
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // For mobile navbar
 
   const sliderImages = [
     img1,

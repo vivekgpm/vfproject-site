@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { searchUsersByName } from '../api/userApi';
-import './AppStyles.css';
+import '../styles/AppStyles.css'; // Import your CSS styles
 
 const UserSearchSelect = ({ onUserSelect }) => {
   const [searchTerm, setSearchTerm] = useState('');

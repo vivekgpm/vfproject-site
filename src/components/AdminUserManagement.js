@@ -5,8 +5,8 @@ import { useState, useEffect, useCallback } from "react";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
 import { formatDate } from "../utils/dateFunctions.js"; // Import your date formatting function
+import '../styles/AppStyles.css'; // Import your CSS styles
 
-import "../components/AppStyles.css"; // Import your CSS styles
 const LoadingOverlay = () => (
   <div className="loading-overlay">
     <div className="loading-content">
@@ -30,17 +30,27 @@ function AdminUserManagement() {
   const [currentPage, setCurrentPage] = useState(1);
   const [investmentPlanFilter, setInvestmentPlanFilter] = useState("");
   const [pageSize] = useState(10);
+  const [totalUsers, setTotalUsers] = useState(0);
   const auth = getAuth();
   const db = getFirestore();
 
   // Check if the current user is an admin
 
-  // Fetch all users (admin only)
+  // Fetch users for the current page (admin only, paginated)
   const fetchUsers = useCallback(async () => {
+    setIsLoading(true);
     try {
       const idToken = await auth.currentUser.getIdToken(true);
+      const params = new URLSearchParams({
+        page: currentPage,
+        pageSize,
+        search: searchTerm,
+        investmentPlan: investmentPlanFilter,
+        sortField,
+        sortDirection,
+      });
       const response = await fetch(
-        `${process.env.REACT_APP_API_URL_3}/api/users`,
+        `${process.env.REACT_APP_API_URL_3}/api/users?${params.toString()}`,
         {
           method: "GET",
           credentials: "include",
@@ -54,23 +64,22 @@ function AdminUserManagement() {
       }
       const data = await response.json();
       setUsers(data.users || []);
-      if (data.users.length === 0) {
+      setTotalUsers(data.totalCount || 0);
+      if (!data.users || data.users.length === 0) {
         setLoadingMessage("No users found");
       }
-      // Extract the users array from the response
     } catch (error) {
       console.error("Error fetching users:", error);
       setErrorMessage("Failed to load users. Please try again.");
     } finally {
       setIsLoading(false);
     }
-  }, [auth]);
+  }, [auth, currentPage, pageSize, searchTerm, investmentPlanFilter, sortField, sortDirection]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setCurrentUser(user);
-
         // Check admin status from Firestore
         try {
           const userDoc = await getDoc(doc(db, "users", user.uid));
@@ -89,9 +98,14 @@ function AdminUserManagement() {
       }
       setIsLoading(false);
     });
-
     return () => unsubscribe();
   }, [auth, db, fetchUsers]);
+
+  // Refetch users when pagination, search, filter, or sort changes
+  useEffect(() => {
+    if (isAdmin) fetchUsers();
+    // eslint-disable-next-line
+  }, [currentPage, pageSize, searchTerm, investmentPlanFilter, sortField, sortDirection, isAdmin]);
 
   const handleInvestmentPlanFilterChange = (e) => {
     setInvestmentPlanFilter(e.target.value);
@@ -141,8 +155,6 @@ function AdminUserManagement() {
     }
   };
 
-  
-
   // Add sorting function
   const sortUsers = (usersToSort) => {
     return [...usersToSort].sort((a, b) => {
@@ -188,33 +200,12 @@ function AdminUserManagement() {
     );
   }
 
-  // Filter and sort users - moved this logic here to avoid scoping issues
-  const filteredUsers = users.filter((user) => {
-    const matchesSearchTerm = Object.values(user)
-      .join(" ")
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
-
-    const planAmount = user.planAmount || 0;
-    const matchesInvestmentPlan =
-      investmentPlanFilter === "" ||
-      (investmentPlanFilter === "economy" && planAmount === 500000) ||
-      (investmentPlanFilter === "premium" && planAmount === 2000000);
-
-    return matchesSearchTerm && matchesInvestmentPlan;
-  });
-
-  const sortedUsers = sortUsers(filteredUsers);
-
   // Calculate pagination
-  const totalPages = Math.ceil(sortedUsers.length / pageSize);
-  const paginatedUsers = sortedUsers.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
+  const totalPages = Math.ceil(totalUsers / pageSize);
+  const paginatedUsers = users; // Already paginated from server
 
   const exportUsersToCSV = () => {
-    if (filteredUsers.length === 0) {
+    if (users.length === 0) {
       alert("No users to export.");
       return;
     }
@@ -284,38 +275,38 @@ function AdminUserManagement() {
         return "Invalid Date";
       }
     };
-    const users = filteredUsers
+    const rows = users
       .map((user) => ({ id: user.id, ...user }))
       .sort((a, b) => {
         const bdaIdA = parseInt(a.bdaId?.replace("BDA", "") || "0");
         const bdaIdB = parseInt(b.bdaId?.replace("BDA", "") || "0");
         return bdaIdA - bdaIdB;
-      });
-    const rows = users.map((user) => [
-      `"${user.investmentPlanName || "N/A"}"`,
-      `"${user.bdaId || "N/A"}"`,
-      `"${user.displayName || "N/A"}"`,
-      `"${user.referrerBdaId || "N/A"}"`,
-      `"${user.referrerName || "N/A"}"`,
-      `"${user.phone || "N/A"}"`,
-      `"${user.email || "N/A"}"`,
-      `"${user.city || "user"}"`,
-      `"${user.state || "user"}"`,
-      `"${formatDateOnly(user.investmentDate || "N/A")}"`, // Changed to formatDateOnly
-      `"${(user.planAmount || 0).toLocaleString("en-IN")}"`,
-      `"${user.dateOfBirth || "N/A"}"`,
-      `"${user.remarks || "N/A"}"`,
-      `"${user.memberAadharCard || "N/A"}"`,
-      `"${user.memberPanCard || "N/A"}"`,
-      `"${user.bankName || "N/A"}"`,
-      `"${user.accountNo || "N/A"}"`,
-      `"${user.ifscCode || "N/A"}"`,
-      `"${user.branchName || "N/A"}"`,
-      `"${user.address || "N/A"}"`,
-      `"${user.nomineeName || "N/A"}"`,
-      `"${user.nomineeRelation || "N/A"}"`,
-      `"${user.nomineeAadharCard || "N/A"}"`,
-    ]);
+      })
+      .map((user) => [
+        `"${user.investmentPlanName || "N/A"}"`,
+        `"${user.bdaId || "N/A"}"`,
+        `"${user.displayName || "N/A"}"`,
+        `"${user.referrerBdaId || "N/A"}"`,
+        `"${user.referrerName || "N/A"}"`,
+        `"${user.phone || "N/A"}"`,
+        `"${user.email || "N/A"}"`,
+        `"${user.city || "user"}"`,
+        `"${user.state || "user"}"`,
+        `"${formatDateOnly(user.investmentDate || "N/A")}"`, // Changed to formatDateOnly
+        `"${(user.planAmount || 0).toLocaleString("en-IN")}"`,
+        `"${user.dateOfBirth || "N/A"}"`,
+        `"${user.remarks || "N/A"}"`,
+        `"${user.memberAadharCard || "N/A"}"`,
+        `"${user.memberPanCard || "N/A"}"`,
+        `"${user.bankName || "N/A"}"`,
+        `"${user.accountNo || "N/A"}"`,
+        `"${user.ifscCode || "N/A"}"`,
+        `"${user.branchName || "N/A"}"`,
+        `"${user.address || "N/A"}"`,
+        `"${user.nomineeName || "N/A"}"`,
+        `"${user.nomineeRelation || "N/A"}"`,
+        `"${user.nomineeAadharCard || "N/A"}"`,
+      ]);
 
     // Combine headers and rows
     const csvContent = [

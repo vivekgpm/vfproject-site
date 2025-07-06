@@ -18,7 +18,7 @@ import Footer from './components/Footer';
 import EditTransaction from './components/EditTransaction';
 import UserProfile from "./components/UserProfile"; // Import UserProfile
 import EditProfile from "./components/EditProfile"; // Import EditProfile
-import "../src/components/AppStyles.css"; // Import the centralized CSS file
+import "../src/styles/AppStyles.css"; // Import global styles
 import ManageAssetTransaction from "./components/ManageAssetTransaction";
 import UpdateAssetPurchase from "./components/UpdateAssetPurchase";
 import Inventory from "./components/Inventory"; // Import Inventory

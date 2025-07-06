@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
-import "../components/AppStyles.css";
+import '../styles/AppStyles.css'; // Import your CSS styles
 
 // Import images
 import villa from "../assets/images/villa.jpg";

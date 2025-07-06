@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { addDoc, collection, updateDoc, doc } from "firebase/firestore";
 import { db } from "../firebase";
-import "./AppStyles.css";
+import '../styles/AppStyles.css'; // Import your CSS styles
 
 const UpdateAssetPurchase = () => {
   const navigate = useNavigate();

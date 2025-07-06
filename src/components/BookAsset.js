@@ -1,4 +1,4 @@
-import "../components/AppStyles.css";
+import '../styles/AppStyles.css'; // Import your CSS styles
 import { useState, useEffect } from "react";
 import { useLocation, useParams, Link, useNavigate } from "react-router-dom";
 import { createTransaction } from "../api/transactionApi";

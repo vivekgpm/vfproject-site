@@ -9,7 +9,7 @@ import {
   where,
   getDocs,
 } from "firebase/firestore";
-import "../components/AppStyles.css";
+import '../styles/AppStyles.css'; // Import your CSS styles
 
 const Profile = () => {
   const { user } = useAuth();

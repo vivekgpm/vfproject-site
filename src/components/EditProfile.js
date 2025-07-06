@@ -13,7 +13,7 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "../firebase";
-import "./AppStyles.css";
+import '../styles/AppStyles.css'; // Import your CSS styles
 import UserSearchSelect from "./UserSearchSelect";
 import { getAllPlans } from "../api/planApi";
 import { indianStates, countries } from "../utils/constants";

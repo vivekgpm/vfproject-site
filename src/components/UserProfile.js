@@ -9,7 +9,7 @@ import {
   where,
   getDocs,
 } from "firebase/firestore";
-import "./AppStyles.css";
+import "../styles/AppStyles.css"; // Import your CSS styles
 import { getDisplayNameFromUid } from "../utils/getDisplayNameFromUid";
 import { formatDate } from "../utils/dateFunctions.js"; // Import your date formatting function
 
@@ -178,13 +178,12 @@ const UserProfile = () => {
               <span className="info-label">Name: </span>
               <span className="info-value">
                 {userDetails?.displayName || "Not set"}
-                
               </span>
             </div>
             <div className="info-row">
               <span className="info-label">Plan: </span>
               <span className="info-value">
-               {userDetails.investmentPlanName}
+                {userDetails.investmentPlanName}
               </span>
             </div>
             <div className="info-row">

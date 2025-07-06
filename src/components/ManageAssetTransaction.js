@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Link } from 'react-router-dom';
-import './AppStyles.css';
+import '../styles/AppStyles.css'; // Import your CSS styles
 
 const ManageAssetTransaction = () => {
   const [assetPurchases, setAssetPurchases] = useState([]);

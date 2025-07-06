@@ -1,0 +1,134 @@
+/* Overall Layout */
+.admin-home {
+  padding: 16px;
+}
+
+/* Stats Cards */
+.stats-container {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.stat-card {
+  flex: 1;
+  min-width: 200px;
+  background: linear-gradient(135deg, #03a6a1, #00d4ff);
+  color: #fff;
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+.stat-card h4 {
+  font-size: 1em;
+  margin-bottom: 8px;
+}
+.stat-card p {
+  font-size: 1.5em;
+  margin: 0;
+}
+
+/* Filters */
+.search-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.search-input,
+.date-input {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+.last-day-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Transaction Cards */
+.transactions-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.transaction-card {
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 16px;
+  transition: transform 0.2s;
+}
+.transaction-card:hover {
+  transform: scale(1.02);
+}
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.card-header h4 {
+  color: #333;
+  font-size: 1.2em;
+  margin: 0;
+}
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 0.9em;
+}
+.status-badge.pending {
+  background: #ffc107;
+}
+.status-badge.completed {
+  background: #28a745;
+}
+
+/* Buttons */
+.btn {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  text-decoration: none;
+  color: #fff;
+  margin-right: 8px;
+}
+.btn-info {
+  background: #17a2b8;
+}
+.btn-warning {
+  background: #ffc107;
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+}
+.pagination-button {
+  background: #03a6a1;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin: 0 4px;
+}
+.pagination-button:hover {
+  background: #00d4ff;
+}
+.pagination-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .stats-container {
+    flex-direction: column;
+  }
+}

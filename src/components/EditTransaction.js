@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
-import '../components/AppStyles.css';
+import '../styles/AppStyles.css'; // Import your CSS styles
 
 const EditTransaction = () => {
   const { id } = useParams();
