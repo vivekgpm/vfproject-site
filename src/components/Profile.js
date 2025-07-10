@@ -9,7 +9,8 @@ import {
   where,
   getDocs,
 } from "firebase/firestore";
-import '../styles/AppStyles.css'; // Import your CSS styles
+import { getDisplayNameFromUid } from "../utils/getDisplayNameFromUid";
+import "../styles/AppStyles.css"; // Import your CSS styles
 
 const Profile = () => {
   const { user } = useAuth();
@@ -19,6 +20,8 @@ const Profile = () => {
   const [error, setError] = useState(null);
   const [lifetimeEarnings, setLifetimeEarnings] = useState(0);
   const [paidAmount, setPaidAmount] = useState(0);
+  const [referredNames, setReferredNames] = useState({});
+
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -50,7 +53,32 @@ const Profile = () => {
           ...doc.data(),
         }));
 
-        setTransactions(transactionsList); // Calculate lifetime earnings and paid amount
+         // Sort transactions by updatedAt in descending order
+        const sortedTransactions = transactionsList.sort((a, b) => {
+          const dateA =
+            a.updatedAt?.toDate() || a.createdAt?.toDate() || new Date(0);
+          const dateB =
+            b.updatedAt?.toDate() || b.createdAt?.toDate() || new Date(0);
+          return dateB - dateA;
+        });
+
+        setTransactions(sortedTransactions); // Calculate lifetime earnings and paid amount
+        // Fetch referred user display names if needed
+        const referredIds = sortedTransactions
+          .map((t) => t.referredUserId)
+          .filter((id) => !!id);
+        const namesMap = {};
+        for (const refId of referredIds) {
+          try {
+            const dp = await getDisplayNameFromUid(refId);
+            if (dp) {
+              namesMap[refId] = dp;
+            }
+          } catch {
+            namesMap[refId] = "";
+          }
+        }
+        setReferredNames(namesMap);
         const totalEarnings = transactionsList.reduce((sum, transaction) => {
           return sum + (transaction.amount || 0);
         }, 0);
@@ -192,7 +220,14 @@ const Profile = () => {
                     <td>{transaction.type}</td>
                     <td>₹{transaction.amount?.toLocaleString()}</td>
                     <td>{transaction.paymentDate}</td>
-                    <td>{transaction.remarks}</td>
+                    <td>
+                      {" "}
+                      {transaction.referredUserId &&
+                      referredNames[transaction.referredUserId]
+                        ? ` - ${referredNames[transaction.referredUserId]}`
+                        : ""}
+                      {transaction.remarks ? ` - ${transaction.remarks}` : ""}
+                    </td>
                   </tr>
                 ))}
               </tbody>
