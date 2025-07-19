@@ -1,11 +1,11 @@
 // React Component for Admin User Management
 import { Link } from "react-router-dom";
-import { FaSearch, FaArrowLeft } from "react-icons/fa";
+import { FaSearch, FaArrowLeft, FaEdit, FaTrash } from "react-icons/fa";
 import { useState, useEffect, useCallback } from "react";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
 import { formatDate } from "../utils/dateFunctions.js"; // Import your date formatting function
-import '../styles/AppStyles.css'; // Import your CSS styles
+import "../styles/AppStyles.css"; // Import your CSS styles
 
 const LoadingOverlay = () => (
   <div className="loading-overlay">
@@ -29,7 +29,7 @@ function AdminUserManagement() {
   const [sortDirection, setSortDirection] = useState("asc");
   const [currentPage, setCurrentPage] = useState(1);
   const [investmentPlanFilter, setInvestmentPlanFilter] = useState("");
-  const [pageSize] = useState(10);
+  const [pageSize] = useState(30);
   const [totalUsers, setTotalUsers] = useState(0);
   const auth = getAuth();
   const db = getFirestore();
@@ -74,7 +74,15 @@ function AdminUserManagement() {
     } finally {
       setIsLoading(false);
     }
-  }, [auth, currentPage, pageSize, searchTerm, investmentPlanFilter, sortField, sortDirection]);
+  }, [
+    auth,
+    currentPage,
+    pageSize,
+    searchTerm,
+    investmentPlanFilter,
+    sortField,
+    sortDirection,
+  ]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -105,7 +113,15 @@ function AdminUserManagement() {
   useEffect(() => {
     if (isAdmin) fetchUsers();
     // eslint-disable-next-line
-  }, [currentPage, pageSize, searchTerm, investmentPlanFilter, sortField, sortDirection, isAdmin]);
+  }, [
+    currentPage,
+    pageSize,
+    searchTerm,
+    investmentPlanFilter,
+    sortField,
+    sortDirection,
+    isAdmin,
+  ]);
 
   const handleInvestmentPlanFilterChange = (e) => {
     setInvestmentPlanFilter(e.target.value);
@@ -155,23 +171,6 @@ function AdminUserManagement() {
     }
   };
 
-  // Add sorting function
-  const sortUsers = (usersToSort) => {
-    return [...usersToSort].sort((a, b) => {
-      let aVal = a[sortField] || "";
-      let bVal = b[sortField] || "";
-
-      if (sortField === "createdAt") {
-        aVal = a.createdAt ? new Date(a.createdAt.seconds * 1000) : new Date(0);
-        bVal = b.createdAt ? new Date(b.createdAt.seconds * 1000) : new Date(0);
-      }
-
-      if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
-      if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
-      return 0;
-    });
-  };
-
   // Handle sort toggle
   const handleSort = (field) => {
     if (sortField === field) {
@@ -204,127 +203,172 @@ function AdminUserManagement() {
   const totalPages = Math.ceil(totalUsers / pageSize);
   const paginatedUsers = users; // Already paginated from server
 
-  const exportUsersToCSV = () => {
-    if (users.length === 0) {
-      alert("No users to export.");
-      return;
-    }
+  const exportUsersToCSV = async () => {
+    setIsLoading(true);
+    try {
+      // Get fresh token
+      const idToken = await auth.currentUser?.getIdToken(true);
 
-    const headers = [
-      "Investment Plan",
-      "BDA ID",
-      "Name",
-      "Referral ID",
-      "Referrer Name",
-      "Mobile", // Include User ID for reference
-      "Email", // Include Email
-      "City", //
-      "State",
-      "Invested Date",
-      "Investment Amount",
-      "Date of Birth",
-      "Remarks",
-      "Aadhaar",
-      "Pancard",
-      "Bank Name",
-      "Account Number",
-      "IFSC Code",
-      "Branch",
-      "Address",
-      "Nominee Name",
-      "Nominee Relation",
-      "Nominee Aadhar",
-    ];
-
-    const formatDateOnly = (timestamp) => {
-      if (!timestamp) return "N/A";
-
-      let date;
-      try {
-        if (timestamp.toDate && typeof timestamp.toDate === "function") {
-          date = timestamp.toDate();
-        } else if (timestamp._seconds) {
-          date = new Date(timestamp._seconds * 1000);
-        } else if (timestamp.seconds) {
-          date = new Date(timestamp.seconds * 1000);
-        } else if (typeof timestamp === "number") {
-          date =
-            timestamp > 1000000000000
-              ? new Date(timestamp)
-              : new Date(timestamp * 1000);
-        } else {
-          date = new Date(timestamp);
-        }
-
-        if (isNaN(date.getTime())) {
-          throw new Error("Invalid Date object created");
-        }
-
-        const options = {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-          timeZone: "Asia/Kolkata",
-        };
-
-        return new Intl.DateTimeFormat("en-GB", options)
-          .format(date)
-          .replace(/ /g, "-");
-      } catch (error) {
-        console.error("Error formatting date for export:", error, timestamp);
-        return "Invalid Date";
+      if (!idToken) {
+        throw new Error("Not authorized. Please login again.");
       }
-    };
-    const rows = users
-      .map((user) => ({ id: user.id, ...user }))
-      .sort((a, b) => {
-        const bdaIdA = parseInt(a.bdaId?.replace("BDA", "") || "0");
-        const bdaIdB = parseInt(b.bdaId?.replace("BDA", "") || "0");
-        return bdaIdA - bdaIdB;
-      })
-      .map((user) => [
-        `"${user.investmentPlanName || "N/A"}"`,
-        `"${user.bdaId || "N/A"}"`,
-        `"${user.displayName || "N/A"}"`,
-        `"${user.referrerBdaId || "N/A"}"`,
-        `"${user.referrerName || "N/A"}"`,
-        `"${user.phone || "N/A"}"`,
-        `"${user.email || "N/A"}"`,
-        `"${user.city || "user"}"`,
-        `"${user.state || "user"}"`,
-        `"${formatDateOnly(user.investmentDate || "N/A")}"`, // Changed to formatDateOnly
-        `"${(user.planAmount || 0).toLocaleString("en-IN")}"`,
-        `"${user.dateOfBirth || "N/A"}"`,
-        `"${user.remarks || "N/A"}"`,
-        `"${user.memberAadharCard || "N/A"}"`,
-        `"${user.memberPanCard || "N/A"}"`,
-        `"${user.bankName || "N/A"}"`,
-        `"${user.accountNo || "N/A"}"`,
-        `"${user.ifscCode || "N/A"}"`,
-        `"${user.branchName || "N/A"}"`,
-        `"${user.address || "N/A"}"`,
-        `"${user.nomineeName || "N/A"}"`,
-        `"${user.nomineeRelation || "N/A"}"`,
-        `"${user.nomineeAadharCard || "N/A"}"`,
-      ]);
 
-    // Combine headers and rows
-    const csvContent = [
-      headers.join(","),
-      ...rows.map((row) => row.join(",")),
-    ].join("\n");
+      const params = new URLSearchParams({
+        pageSize: 5000,
+        search: searchTerm,
+        investmentPlan: investmentPlanFilter,
+        sortField: "bdaId",
+        sortDirection: "asc",
+      });
 
-    // Create a Blob and download link
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL_3}/api/users?${params.toString()}`,
+        {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-    link.setAttribute("href", url);
-    link.setAttribute("download", "users_export.csv");
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.message || `HTTP error! status: ${response.status}`
+        );
+      }
+
+      const data = await response.json();
+      const allUsers = data.users || [];
+
+      if (allUsers.length === 0) {
+        alert("No users to export.");
+        return;
+      }
+
+      const headers = [
+        "Investment Plan",
+        "BDA ID",
+        "Name",
+        "Referral ID",
+        "Referrer Name",
+        "Mobile", // Include User ID for reference
+        "Email", // Include Email
+        "City", //
+        "State",
+        "Invested Date",
+        "Investment Amount",
+        "Date of Birth",
+        "Remarks",
+        "Aadhaar",
+        "Pancard",
+        "Bank Name",
+        "Account Number",
+        "IFSC Code",
+        "Branch",
+        "Address",
+        "Nominee Name",
+        "Nominee Relation",
+        "Nominee Aadhar",
+      ];
+
+      const formatDateOnly = (timestamp) => {
+        if (!timestamp) return "N/A";
+
+        let date;
+        try {
+          if (timestamp.toDate && typeof timestamp.toDate === "function") {
+            date = timestamp.toDate();
+          } else if (timestamp._seconds) {
+            date = new Date(timestamp._seconds * 1000);
+          } else if (timestamp.seconds) {
+            date = new Date(timestamp.seconds * 1000);
+          } else if (typeof timestamp === "number") {
+            date =
+              timestamp > 1000000000000
+                ? new Date(timestamp)
+                : new Date(timestamp * 1000);
+          } else {
+            date = new Date(timestamp);
+          }
+
+          if (isNaN(date.getTime())) {
+            throw new Error("Invalid Date object created");
+          }
+
+          const options = {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            timeZone: "Asia/Kolkata",
+          };
+
+          return new Intl.DateTimeFormat("en-GB", options)
+            .format(date)
+            .replace(/ /g, "-");
+        } catch (error) {
+          console.error("Error formatting date for export:", error, timestamp);
+          return "Invalid Date";
+        }
+      };
+      const rows = allUsers
+        .map((user) => ({ id: user.id, ...user }))
+        .sort((a, b) => {
+          const bdaIdA = parseInt(a.bdaId?.replace("BDA", "") || "0");
+          const bdaIdB = parseInt(b.bdaId?.replace("BDA", "") || "0");
+          return bdaIdA - bdaIdB;
+        })
+        .map((user) => [
+          `"${user.investmentPlanName || "N/A"}"`,
+          `"${user.bdaId || "N/A"}"`,
+          `"${user.displayName || "N/A"}"`,
+          `"${user.referrerBdaId || "N/A"}"`,
+          `"${user.referrerName || "N/A"}"`,
+          `"${user.phone || "N/A"}"`,
+          `"${user.email || "N/A"}"`,
+          `"${user.city || "user"}"`,
+          `"${user.state || "user"}"`,
+          `"${formatDateOnly(user.investmentDate || "N/A")}"`, // Changed to formatDateOnly
+          `"${(user.planAmount || 0).toLocaleString("en-IN")}"`,
+          `"${user.dateOfBirth || "N/A"}"`,
+          `"${user.remarks || "N/A"}"`,
+          `"${user.memberAadharCard || "N/A"}"`,
+          `"${user.memberPanCard || "N/A"}"`,
+          `"${user.bankName || "N/A"}"`,
+          `"${user.accountNo || "N/A"}"`,
+          `"${user.ifscCode || "N/A"}"`,
+          `"${user.branchName || "N/A"}"`,
+          `"${user.address || "N/A"}"`,
+          `"${user.nomineeName || "N/A"}"`,
+          `"${user.nomineeRelation || "N/A"}"`,
+          `"${user.nomineeAadharCard || "N/A"}"`,
+        ]);
+
+      // Combine headers and rows
+      const csvContent = [
+        headers.join(","),
+        ...rows.map((row) => row.join(",")),
+      ].join("\n");
+
+      // Create a Blob and download link
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+
+      link.setAttribute("href", url);
+      link.setAttribute("download", "users_export.csv");
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Error exporting users:", error);
+      alert(`Failed to export users: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
   };
   return (
     <div className="admin-management-container">
@@ -430,15 +474,16 @@ function AdminUserManagement() {
                             to={`/admin/edit-profile/${user.uid}`}
                             className="btn btn-warning btn-sm"
                           >
-                            Edit
+                            <FaEdit />
                           </Link>
-                          <button
+                          <Link
                             onClick={() => handleDeleteUser(user.uid)}
                             className="btn btn-danger btn-sm"
-                            disabled={isDeleting}
+                            disabled={isDeleting} title="Delete User"
                           >
-                            {isDeleting ? "Deleting..." : "Delete"}
-                          </button>
+                           
+                            {isDeleting ? "Deleting..." :  <FaTrash />}
+                          </Link>
                         </div>
                       </td>
                     </tr>
@@ -462,9 +507,18 @@ function AdminUserManagement() {
               >
                 Previous
               </button>
-              <span>
-                Page {currentPage} of {totalPages}
-              </span>
+              <select
+                value={currentPage}
+                onChange={(e) => setCurrentPage(Number(e.target.value))}
+                className="page-select"
+              >
+                {[...Array(totalPages)].map((_, index) => (
+                  <option key={index + 1} value={index + 1}>
+                    Page {index + 1}
+                  </option>
+                ))}
+              </select>
+              <span> of {totalPages}</span>
               <button
                 disabled={currentPage === totalPages}
                 onClick={() => setCurrentPage((p) => p + 1)}
