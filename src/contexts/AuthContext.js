@@ -1,7 +1,7 @@
-import { createContext, useState, useEffect, useContext } from 'react';
-import { auth, db } from '../firebase';
-import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { createContext, useState, useEffect, useContext } from "react";
+import { auth, db } from "../firebase";
+import { signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 
 const AuthContext = createContext();
 
@@ -10,26 +10,25 @@ const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-
   const fetchUserData = async (uid) => {
     try {
-      console.log('Fetching user data for UID:', uid);
-      const userDocRef = doc(db, 'users', uid);
-      console.log('User document reference:', userDocRef);
-      
+      console.log("Fetching user data for UID:", uid);
+      const userDocRef = doc(db, "users", uid);
+      console.log("User document reference:", userDocRef);
+
       const userDocSnap = await getDoc(userDocRef);
-      console.log('Document snapshot exists:', userDocSnap.exists());
-      
+      console.log("Document snapshot exists:", userDocSnap.exists());
+
       if (userDocSnap.exists()) {
         const userData = userDocSnap.data();
-        console.log('User data retrieved:', userData);
+        console.log("User data retrieved:", userData);
         return userData;
       } else {
-        console.error('No user document found for UID:', uid);
+        console.error("No user document found for UID:", uid);
         return null;
       }
     } catch (err) {
-      console.error('Error fetching user data:', err);
+      console.error("Error fetching user data:", err);
       throw err;
     }
   };
@@ -39,9 +38,9 @@ const AuthProvider = ({ children }) => {
       try {
         setLoading(true);
         if (authUser) {
-          console.log('Auth state changed - User authenticated:', authUser.uid);
+          console.log("Auth state changed - User authenticated:", authUser.uid);
           const userData = await fetchUserData(authUser.uid);
-          
+
           if (userData) {
             setUser({
               uid: authUser.uid,
@@ -49,15 +48,15 @@ const AuthProvider = ({ children }) => {
               ...userData,
             });
           } else {
-            setError('User data not found in database');
+            setError("User data not found in database");
             setUser(null);
           }
         } else {
-          console.log('Auth state changed - No user');
+          console.log("Auth state changed - No user");
           setUser(null);
         }
       } catch (err) {
-        console.error('Auth state change error:', err);
+        console.error("Auth state change error:", err);
         setError(err.message);
         setUser(null);
       } finally {
@@ -68,30 +67,50 @@ const AuthProvider = ({ children }) => {
     return unsubscribe;
   }, [db]);
 
-  const login = async (email, password) => {
+  const login = async (identifier, password) => {
     try {
       setError(null);
       setLoading(true);
-      console.log('Attempting login for email:', email);
-      
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      console.log('User authenticated:', userCredential.user.uid);
-      
+      console.log("Attempting login for email:", identifier);
+      let userCredential;
+      if (identifier.includes("@")) {
+        userCredential = await signInWithEmailAndPassword(
+          auth,
+          identifier,
+          password
+        );
+        console.log("User authenticated:", userCredential.user.uid);
+      } else {
+        const usernameDoc = await getDoc(doc(db, "usernames", identifier));
+
+        if (!usernameDoc.exists()) {
+          throw new Error("BDA ID not found");
+        }
+        const { email } = usernameDoc.data();
+        console.log("Found email for bdaId:", email);
+
+        userCredential = await signInWithEmailAndPassword(
+          auth,
+          email,
+          password
+        );
+      }
+
       const userData = await fetchUserData(userCredential.user.uid);
-      
+
       if (userData) {
         const user = {
           uid: userCredential.user.uid,
           email: userCredential.user.email,
-          ...userData
+          ...userData,
         };
         setUser(user);
         return user;
       } else {
-        throw new Error('User profile not found. Please contact support.');
+        throw new Error("User profile not found. Please contact support.");
       }
     } catch (err) {
-      console.error('Login process error:', err);
+      console.error("Login process error:", err);
       setError(err.message);
       throw err;
     } finally {
@@ -104,7 +123,7 @@ const AuthProvider = ({ children }) => {
       await signOut(auth);
       setUser(null);
     } catch (err) {
-      console.error('Logout error:', err);
+      console.error("Logout error:", err);
       setError(err.message);
       throw err;
     }
@@ -115,20 +134,16 @@ const AuthProvider = ({ children }) => {
     login,
     logout,
     error,
-    loading
+    loading,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };

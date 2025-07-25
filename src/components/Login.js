@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import '../styles/AppStyles.css'; // Import your CSS styles
+import "../styles/AppStyles.css"; // Import your CSS styles
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -44,7 +44,7 @@ const Login = () => {
             <div className="form-group">
               <label htmlFor="email">Email</label>
               <input
-                type="email"
+                type="text"
                 id="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
