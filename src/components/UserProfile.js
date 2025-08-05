@@ -83,11 +83,11 @@ const UserProfile = () => {
 
         const paidAmount = transactionsList.reduce((sum, transaction) => {
           return transaction.paymentDate
-            ? sum + (transaction.amount || 0)
+            ? sum + (transaction.paidAmount || 0)
             : sum;
         }, 0);
 
-        const remainingAmount = userData.planAmount * 4 - totalEarnings;
+        const remainingAmount = userData.planAmount * 4 - paidAmount;
         setRemainingAmount(remainingAmount);
 
         setLifetimeEarnings(totalEarnings);
@@ -218,6 +218,8 @@ const UserProfile = () => {
                   <th>Transaction Date</th>
                   <th>Transaction Type</th>
                   <th>Amount</th>
+                  <th>Paid Amount</th>
+                  <th>Remaining Amount</th>
                   <th>Payment Date</th>
                   <th>Remarks</th>
                 </tr>
@@ -234,6 +236,13 @@ const UserProfile = () => {
                         : transaction.type}
                     </td>
                     <td>₹{transaction.amount?.toLocaleString("en-IN")}</td>
+                    <td>
+                      ₹{transaction.paidAmount?.toLocaleString("en-IN")}
+                    </td>
+
+                    <td>
+                      ₹{transaction.remainingAmount?.toLocaleString("en-IN")}
+                    </td>
                     <td>{transaction.paymentDate || "-"}</td>
                     <td>
                       {transaction.referredUserId &&
