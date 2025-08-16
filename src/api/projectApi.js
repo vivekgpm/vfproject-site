@@ -1,13 +1,21 @@
-import { collection, getDocs, addDoc, doc, getDoc, query, where } from 'firebase/firestore';
-import { db } from '../firebase';
+import {
+  collection,
+  getDocs,
+  addDoc,
+  doc,
+  getDoc,
+  query,
+  where,
+} from "firebase/firestore";
+import { db } from "../firebase";
 
 // Get all projects
 export const getAllProjects = async () => {
   try {
     const snapshot = await getDocs(collection(db, "projects"));
-    return snapshot.docs.map(doc => ({
+    return snapshot.docs.map((doc) => ({
       id: doc.id,
-      ...doc.data()
+      ...doc.data(),
     }));
   } catch (error) {
     console.error("Error fetching projects:", error);
@@ -29,13 +37,33 @@ export const getProjectById = async (projectId) => {
   }
 };
 
+/**
+ * Fetch location details by ID from Firestore
+ * @param {string} locationId - The ID of the location to fetch
+ * @returns {Promise<object>} Location data
+ */
+export const getLocationById = async (locationId) => {
+  try {
+    const docRef = doc(db, "locations", locationId);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      throw new Error("Location not found");
+    }
+
+    return { id: docSnap.id, ...docSnap.data() };
+  } catch (error) {
+    console.error("Error fetching location:", error);
+    throw error;
+  }
+};
 // Create new project
 export const createProject = async (projectData) => {
   try {
     const docRef = await addDoc(collection(db, "projects"), {
       ...projectData,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     });
     return docRef.id;
   } catch (error) {
@@ -49,9 +77,9 @@ export const getProjectsByType = async (type) => {
   try {
     const q = query(collection(db, "projects"), where("type", "==", type));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({
+    return snapshot.docs.map((doc) => ({
       id: doc.id,
-      ...doc.data()
+      ...doc.data(),
     }));
   } catch (error) {
     console.error("Error fetching projects by type:", error);

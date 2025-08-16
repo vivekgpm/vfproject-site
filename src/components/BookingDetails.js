@@ -45,16 +45,16 @@ const BookingDetails = () => {
 
           // Fetch all payments related to this asset
           const paymentsQuery = query(
-            collection(db, 'transactions'),
+            collection(db, 'assetPurchases'),
             where('assetId', '==', assetData.assetId),
-            where('type', '==', 'asset_payment')
+           // where('type', '==', 'asset_payment')
           );
           const paymentsSnapshot = await getDocs(paymentsQuery);
           const paymentsData = paymentsSnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
           }));
-          setPayments(paymentsData);
+          setPayments(paymentsData[0].paymentHistory);
         }
       } catch (error) {
         console.error('Error fetching booking details:', error);
@@ -74,7 +74,7 @@ const BookingDetails = () => {
   if (!booking) return <div>Booking not found</div>;
 
   // Use booking amount from asset purchase as total paid
-  const totalPaid = booking.bookingAmount || 0;
+  const totalPaid = booking.paymentSummary?.paidAmount || 0;
 
   return (
     <div className="booking-details-container">
@@ -174,7 +174,7 @@ const BookingDetails = () => {
             </div>
             <div className="info-item">
               <span className="label">Final Price</span>
-              <span className="value">₹{booking.pricing?.finalPrice?.toLocaleString() || '0'}</span>
+              <span className="value">₹{booking.pricing?.totalPrice?.toLocaleString() || '0'}</span>
             </div>
           </div>
         </section>
@@ -188,15 +188,15 @@ const BookingDetails = () => {
             </div>
             <div className="info-item">
               <span className="label">Remaining Payment</span>
-              <span className="value">₹{booking.pricing?.remainingPayment?.toLocaleString() || '0'}</span>
+              <span className="value">₹{booking.paymentSummary?.remainingAmount?.toLocaleString() || '0'}</span>
             </div>
             <div className="info-item">
               <span className="label">Earned Commission</span>
-              <span className="value">₹{booking.amount?.toLocaleString() || '0'}</span>
+              <span className="value">₹{booking.paymentSummary?.totalCommissionEarned?.toLocaleString() || '0'}</span>
             </div>
             <div className="info-item">
               <span className="label">Remaining Commission</span>
-              <span className="value">₹{booking.pricing?.remainingDiscount?.toLocaleString() || '0'}</span>
+              <span className="value">₹{booking.paymentSummary?.remainingCommission?.toLocaleString() || '0'}</span>
             </div>
           </div>
 
@@ -214,8 +214,8 @@ const BookingDetails = () => {
                 {payments.map((payment) => (
                   <tr key={payment.id}>
                     <td>{payment.createdAt?.toDate().toLocaleDateString()}</td>
-                    <td>₹{payment.amount?.toLocaleString()}</td>
-                    <td>{payment.description}</td>
+                    <td>₹{payment.amount}</td>
+                    <td>{payment.remarks}</td>
                   </tr>
                 ))}
               </tbody>

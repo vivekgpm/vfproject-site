@@ -78,9 +78,9 @@ const ProjectList = () => {
       <div className="container">
         <div className="projects-grid">
           {projects.map((project) => (
-            <Link 
-              to={`/projects/${project.id}`} 
-              key={project.id} 
+            <Link
+              to={`/projects/${project.id}`}
+              key={project.id}
               className="project-card"
               state={{ project: project }}
             >
@@ -95,10 +95,10 @@ const ProjectList = () => {
                 />
               </div>
               <div className="project-name">
-                <h3>{project.name}</h3>                
+                <h3>{project.name}</h3>
               </div>
               <div className="project-name">
-              <h4>{project.location}</h4>
+                <h4>{project.description}</h4>
               </div>
             </Link>
           ))}

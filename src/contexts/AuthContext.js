@@ -65,7 +65,7 @@ const AuthProvider = ({ children }) => {
     });
 
     return unsubscribe;
-  }, [db]);
+  }, []);
 
   const login = async (identifier, password) => {
     try {

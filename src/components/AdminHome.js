@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { db } from "../firebase";
 import "../styles/AppStyles.css"; // Import the centralized CSS file
+import { FaInfo } from "react-icons/fa"; // Example from React Icons
 
 const AdminHome = () => {
   const [transactions, setTransactions] = useState([]);
@@ -256,7 +257,7 @@ const AdminHome = () => {
           Manage Members
         </Link>
         <Link to="/admin/manage-asset-transactions" className="admin-button">
-          Manage Asset Purchase
+          Manage Asset Purchases
         </Link>
         <Link onClick={exportTransactionsToCSV} className="admin-button">
           Export Transactions (CSV)
@@ -317,21 +318,26 @@ const AdminHome = () => {
                   </span>
                 </td>
                 <td>
-                  {transaction.type !== "Referral" && (
-                    <Link
-                      to={`/booking-details/${transaction.id}`}
-                      className="btn btn-info btn-sm"
-                    >
-                      View Details
-                    </Link>
-                  )}
-                  <Link
-                    to={`/edit-transaction/${transaction.id}`}
-                    className="btn btn-warning btn-sm"
-                    style={{ marginLeft: "8px" }}
-                  >
-                    Edit
-                  </Link>
+                  <div className="action-buttons">
+                    {transaction.type !== "Referral" && (
+                      <Link
+                        to={`/booking-details/${transaction.assetTransactionReference}`}
+                        className="btn btn-info btn-sm"
+                      >
+                        <FaInfo />
+                      </Link>
+                    )}
+                    {transaction.type === "Referral" && (
+                      <Link
+                        to={`/edit-transaction/${transaction.id}`}
+                        state={{ type: transaction.type }}
+                        className="btn btn-warning btn-sm"
+                        style={{ marginLeft: "8px" }}
+                      >
+                        Edit
+                      </Link>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
