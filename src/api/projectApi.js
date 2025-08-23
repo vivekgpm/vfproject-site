@@ -58,13 +58,19 @@ export const getLocationById = async (locationId) => {
   }
 };
 // Create new project
-export const createProject = async (projectData) => {
+export const createProject = async (projectData, locationData) => {
   try {
     const docRef = await addDoc(collection(db, "projects"), {
       ...projectData,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
+    const docRef2 = await addDoc(collection(db, "locations"), {
+      ...locationData,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    console.log("Location created with ID: ", docRef2.id);
     return docRef.id;
   } catch (error) {
     console.error("Error creating project:", error);

@@ -30,6 +30,7 @@ import Inventory from "./components/Inventory"; // Import Inventory
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import Location from "./components/Location"; // Import Location component
 import MigrateUsers from "./components/MigrateUsers";
+import ProjectAdminForm from "./components/NewProject";
 
 // Custom hook for focus management
 function useFocusOnNavigate() {
@@ -170,6 +171,14 @@ function App() {
               element={
                 <ProtectedRoute isAdminRoute={true}>
                   <MigrateUsers />
+                </ProtectedRoute>
+              }
+            />
+                 <Route
+              path="/admin/add-project"
+              element={
+                <ProtectedRoute isAdminRoute={true}>
+                  <ProjectAdminForm />
                 </ProtectedRoute>
               }
             />

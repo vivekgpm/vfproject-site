@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
-import '../styles/AppStyles.css'; // Import your CSS styles
+import "../styles/AppStyles.css"; // Import your CSS styles
 
 // Import images
 import villa from "../assets/images/villa.jpg";
@@ -86,7 +86,7 @@ const ProjectList = () => {
             >
               <div className="project-image">
                 <img
-                  src={getProjectImage(project.type)}
+                  src={project.imageUrl || getProjectImage(project.type)}
                   alt={project.name}
                   onError={(e) => {
                     e.target.onerror = null;
@@ -98,7 +98,7 @@ const ProjectList = () => {
                 <h3>{project.name}</h3>
               </div>
               <div className="project-name">
-                <h4>{project.description}</h4>
+                <h4>{project.type}</h4>
               </div>
             </Link>
           ))}

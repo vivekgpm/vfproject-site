@@ -207,9 +207,9 @@ const ProjectDetails = () => {
         <div
           className="hero-section"
           style={{
-            backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.7)), url(${getProjectImage(
-              project.type
-            )})`,
+            backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.7)), url(${
+              project.imageUrl || getProjectImage(project.type)
+            })`,
             backgroundSize: "cover",
             backgroundPosition: "center",
           }}
@@ -258,13 +258,14 @@ const ProjectDetails = () => {
                 {/* Tab Content */}
                 <div className="tab-content">
                   {activeTab === "overview" && (
-                    <div className="overview-content">
-                      <h3>Project Overview</h3>
-                      <p className="description">
+                    <div className="description">
+                      <p>
                         {project.description ||
                           "Premium residential development offering modern amenities and excellent connectivity."}
                       </p>
-
+                      <div>
+                        <br></br>
+                      </div>
                       <div className="stats-grid">
                         <div className="stat-card total">
                           <div className="stat-number">
@@ -280,9 +281,9 @@ const ProjectDetails = () => {
                         </div>
                         <div className="stat-card booked">
                           <div className="stat-number">
-                            {project.bookedPlots}
+                            {project.soldPlots}
                           </div>
-                          <div className="stat-label">Booked</div>
+                          <div className="stat-label">Sold</div>
                         </div>
                         <div className="stat-card reserved">
                           <div className="stat-number">
@@ -615,7 +616,7 @@ const ProjectDetails = () => {
                     <span>Occupancy</span>
                     <span>
                       {Math.round(
-                        (project.bookedPlots / project.totalPlots) * 100
+                        (project.soldPlots / project.totalPlots) * 100
                       )}
                       %
                     </span>
