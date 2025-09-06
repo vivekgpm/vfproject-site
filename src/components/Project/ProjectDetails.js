@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 //import '../styles/AppStyles.css';
 import "./ProjectDetails.css"; // Import your CSS styles
-import { getProjectById, getLocationById } from "../api/projectApi";
-import { useAuth } from "../contexts/AuthContext";
+import { getProjectById, getLocationById } from "../../api/projectApi";
+import { useAuth } from "../../contexts/AuthContext";
 import {
   Home,
   Users,
@@ -19,11 +19,11 @@ import { GiWaterDrop } from "react-icons/gi";
 import { MdWater } from "react-icons/md";
 
 // Import images
-import villa from "../assets/images/villa.jpg";
-import resPlot from "../assets/images/resPlot.jpg";
-import comPlot from "../assets/images/comPlot.jpg";
-import defaultImage from "../assets/images/default-project.png";
-import cc from "../assets/images/img100.jpg";
+import villa from "../../assets/images/villa.jpg";
+import resPlot from "../../assets/images/resPlot.jpg";
+import comPlot from "../../assets/images/comPlot.jpg";
+import defaultImage from "../../assets/images/default-project.png";
+import cc from "../../assets/images/img100.jpg";
 
 const ProjectDetails = () => {
   const { id } = useParams();

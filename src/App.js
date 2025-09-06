@@ -7,7 +7,7 @@ import {
 } from "react-router-dom";
 import HomePage from "./components/HomePage";
 import ProjectList from "./components/ProjectList";
-import ProjectDetails from "./components/ProjectDetails";
+import ProjectDetails from "./components/Project/ProjectDetails";
 import Profile from "./components/Profile";
 import AdminHome from "./components/AdminHome";
 import AddMember from "./components/AddMember";

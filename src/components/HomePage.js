@@ -15,6 +15,7 @@ import img2 from "../assets/images/img91.jpg";
 import img3 from "../assets/images/img100.jpg";
 import img4 from "../assets/images/overview.jpg";
 import "../styles/Home.css"; // Import your CSS styles
+import "./Home.css"; // Import your CSS styles
 // Example image, replace with actual images
 
 const HomePage = () => {
