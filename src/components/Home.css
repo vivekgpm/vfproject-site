@@ -1,11 +1,9 @@
 .hero-section {
-  background: linear-gradient(
-    to bottom right,
-    var(--color-teal),
-    var(--color-deep-orange)
-  ) !important;
+  background: linear-gradient(to bottom right,
+      var(--color-teal),
+      var(--color-deep-orange)) !important;
 }
 
-.stat-label{
-    color: white !important;
+.stat-label {
+  color: white !important;
 }
