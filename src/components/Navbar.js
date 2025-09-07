@@ -34,7 +34,7 @@ const Navbar = () => {
           <Link to="/" className="nav-link" onClick={closeMenu}>Home</Link>
           <Link to="/projects" className="nav-link" onClick={closeMenu}>Projects</Link>
           
-          <Link to="/contact" className="nav-link" onClick={closeMenu}>Contact</Link>
+        
           <Link to="/plans" className="nav-link" onClick={closeMenu}>Plans</Link>
           {user ? (
             <>

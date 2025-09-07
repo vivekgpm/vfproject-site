@@ -120,7 +120,7 @@ const HomePage = () => {
             </h1>
 
             <p className="hero-subheadline-text">
-              Your gateway to investments and sustainable growth opportunities
+              Your gateway to investments and trustworthy growth opportunities
             </p>
 
             <div className="hero-button-group">
