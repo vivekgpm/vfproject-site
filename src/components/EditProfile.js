@@ -183,6 +183,7 @@ const EditProfile = () => {
 
       await updateDoc(userRef, updateData);
 
+      
       // Prepare referral transaction data
 
       if (referralChanged) {
