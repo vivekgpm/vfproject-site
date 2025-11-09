@@ -122,7 +122,7 @@ const UserProfile = () => {
         </div>
       </div>
       <div className="link-align">
-        <Link to="/admin/newmember" className="back-button">
+        <Link to="/admin/members" className="back-button">
           ← Back to Members List
         </Link>
       </div>

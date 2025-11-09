@@ -253,7 +253,7 @@ const AdminHome = () => {
         <Link to="/admin/add-member" className="admin-button">
           Add New Member
         </Link>
-        <Link to="/admin/newmember" className="admin-button">
+        <Link to="/admin/members" className="admin-button">
           Manage Members
         </Link>
         <Link to="/admin/manage-asset-transactions" className="admin-button">

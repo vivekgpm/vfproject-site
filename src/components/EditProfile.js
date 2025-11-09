@@ -13,7 +13,7 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "../firebase";
-import '../styles/AppStyles.css'; // Import your CSS styles
+import "../styles/AppStyles.css"; // Import your CSS styles
 import UserSearchSelect from "./UserSearchSelect";
 import { getAllPlans } from "../api/planApi";
 import { indianStates, countries } from "../utils/constants";
@@ -184,15 +184,66 @@ const EditProfile = () => {
       await updateDoc(userRef, updateData);
 
       // Prepare referral transaction data
+
       if (referralChanged) {
         const auth = getAuth();
         const currentUser = auth.currentUser;
         const currentUid = currentUser ? currentUser.uid : "Unknown";
-        const referrerDoc = await getDoc(doc(db, "users", formData.referralId));
-        if (referrerDoc.exists()) {
-          const referrerData = referrerDoc.data();
 
-          if (referrerData) {
+        // Case: referral removed (cleared)
+        if (!formData.referralId) {
+          // Delete existing referral txn(s) if present
+          if (existingReferralTxnId) {
+            try {
+              await updateFirestoreDoc(
+                doc(db, "transactions", existingReferralTxnId),
+                { deletedAt: serverTimestamp(), deletedBy: currentUid }
+              );
+              // optionally fully delete:
+              // await deleteDoc(doc(db, "transactions", existingReferralTxnId));
+            } catch (err) {
+              console.warn("Could not delete referral txn:", err);
+            }
+          } else {
+            // also check for any other referral txns (defensive)
+            try {
+              const extraQuery = query(
+                collection(db, "transactions"),
+                where("referredUserId", "==", userId),
+                where("type", "==", "Referral")
+              );
+              const extraSnap = await getDocs(extraQuery);
+              extraSnap.forEach(async (d) => {
+                await updateFirestoreDoc(doc(db, "transactions", d.id), {
+                  deletedAt: serverTimestamp(),
+                  deletedBy: currentUid,
+                });
+              });
+            } catch (err) {
+              console.warn("Error cleaning extra referral txns", err);
+            }
+          }
+
+          // clear referral fields on user doc (already updating userRef above with updateData,
+          // ensure referralId, referrerName, referrerBdaId are cleared)
+          try {
+            await updateDoc(userRef, {
+              referralId: null,
+              referrerName: null,
+              referrerBdaId: null,
+              updatedAt: new Date(),
+              updatedBy: currentUid,
+            });
+          } catch (err) {
+            console.warn("Error clearing user referral fields:", err);
+          }
+        } else {
+          // Set/Change referral: compute and create/update txn as before
+          const referrerDoc = await getDoc(
+            doc(db, "users", formData.referralId)
+          );
+          if (referrerDoc.exists()) {
+            const referrerData = referrerDoc.data();
             const plan = plans.find(
               (p) => p.planName === referrerData.investmentPlanName
             );
@@ -201,17 +252,19 @@ const EditProfile = () => {
                 ? Number(plan.referralPercentage)
                 : 0;
             const referralBonus =
-              (referralPercentage * formData.planAmount) / 100;
+              (referralPercentage * (Number(formData.planAmount) || 0)) / 100;
+
             const referralTxnData = {
-              userId: formData.referrerBdaId,
+              userId: referrerData.bdaId || formData.referrerBdaId || "",
               referralBonusAmount: referralBonus,
               referredUserId: userId,
               referralId: formData.referralId,
-              referrerName: formData.referrerName,
-              referrerBdaId: formData.referrerBdaId,
+              referrerName:
+                referrerData.displayName || formData.referrerName || "",
+              referrerBdaId: referrerData.bdaId || formData.referrerBdaId || "",
               referredUserPlan: formData.investmentPlanName,
               referredUserAmount: formData.planAmount,
-              referralPercentage: referralPercentage,
+              referralPercentage,
               type: "Referral",
               amount: referralBonus,
               status: "Pending",
@@ -224,13 +277,11 @@ const EditProfile = () => {
             };
 
             if (existingReferralTxnId) {
-              // UPDATE existing referral transaction
               await updateFirestoreDoc(
                 doc(db, "transactions", existingReferralTxnId),
                 referralTxnData
               );
             } else {
-              // CREATE new referral transaction
               await addDoc(collection(db, "transactions"), {
                 ...referralTxnData,
                 createdAt: serverTimestamp(),
@@ -240,11 +291,12 @@ const EditProfile = () => {
           }
         }
       }
+
       setShowSuccessPopup(true);
 
       setTimeout(() => {
         setShowSuccessPopup(false);
-        navigate("/admin/newmember");
+        navigate("/admin/members");
       }, 2000);
     } catch (err) {
       console.error("Error updating user:", err);
@@ -255,7 +307,7 @@ const EditProfile = () => {
   };
 
   const cancelEdit = () => {
-    navigate("/admin/newmember");
+    navigate("/admin/members");
   };
   if (loading) return <div>Loading...</div>;
   if (error) return <div className="error-message">{error}</div>;
@@ -285,7 +337,7 @@ const EditProfile = () => {
 
       <div className="form-header">
         <h2>Edit Member Profile</h2>
-        <Link to="/admin/newmember" className="back-button">
+        <Link to="/admin/members" className="back-button">
           <i className="fas fa-arrow-left"></i> Back to Members List
         </Link>
       </div>

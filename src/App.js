@@ -86,7 +86,7 @@ function App() {
               }
             />
             <Route
-              path="/admin/newmember"
+              path="/admin/members"
               element={
                 <ProtectedRoute isAdminRoute={true}>
                   <AdminUserManagement />

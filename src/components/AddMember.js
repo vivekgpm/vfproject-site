@@ -374,7 +374,7 @@ const AddMember = () => {
 
       setTimeout(() => {
         setShowSuccessPopup(false);
-        navigate("/admin/newmember");
+        navigate("/admin/members");
       }, 3000);
     } catch (error) {
       console.error("Error adding member:", error);
